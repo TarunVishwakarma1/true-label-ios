@@ -14,6 +14,12 @@ import SwiftUI
 /// randomized once per ray from a seeded generator, so only the wave itself
 /// animates — the rays don't reshuffle or jitter frame to frame.
 struct PremiumBackground: View {
+    /// Freezes the animation entirely (no redraws, no blur passes) when
+    /// this background isn't actually visible — e.g. covered by a
+    /// fullScreenCover, which otherwise keeps rendering underneath at full
+    /// cost since SwiftUI doesn't tear the presenter down.
+    var isPaused: Bool = false
+
     private let nightSky = Color(red: 0.01, green: 0.015, blue: 0.025)
 
     private struct RayGeometry {
@@ -40,7 +46,9 @@ struct PremiumBackground: View {
     }
 
     var body: some View {
-        TimelineView(.animation) { timeline in
+        // The wave motion is slow — 24fps reads just as smooth as native
+        // ProMotion refresh here, at a fraction of the blur-filter cost.
+        TimelineView(.animation(minimumInterval: 1.0 / 24.0, paused: isPaused)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
 
             Canvas { context, size in

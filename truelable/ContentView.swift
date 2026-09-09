@@ -8,18 +8,22 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var isScanning = false
+
     var body: some View {
         ZStack(alignment: .bottom) {
-            DotGridBackground()
+            DotGridBackground(isPaused: isScanning)
 
-            ScanButton {
-                print("Scan tapped")
+            ScanButton(isPaused: isScanning) {
+                isScanning = true
             }
             .padding(.bottom, 48)
         }
+        .fullScreenCover(isPresented: $isScanning) {
+            ScannerView(onDismiss: {
+                print("[ContentView] onDismiss closure fired, setting isScanning = false")
+                isScanning = false
+            })
+        }
     }
-}
-
-#Preview {
-    ContentView()
 }

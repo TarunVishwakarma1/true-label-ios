@@ -9,10 +9,11 @@ struct DotGridBackground: View {
     var spacing: CGFloat = 26
     var dotSize: CGFloat = 1.6
     var color: Color = .white.opacity(0.18)
+    var isPaused: Bool = false
 
     var body: some View {
         ZStack {
-            PremiumBackground()
+            PremiumBackground(isPaused: isPaused)
             dotsLayer
         }
         .ignoresSafeArea()
