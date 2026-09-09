@@ -179,7 +179,7 @@ struct ScannerView: View {
                 } label: {
                     Image(systemName: "arrow.right")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.accentLabel)
                         .padding(14)
                         .glassEffect(.regular.tint(.accentColor), in: Circle())
                 }
@@ -246,7 +246,7 @@ struct ScannerView: View {
 
             Button("Scan Again", action: reset)
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(.accentLabel)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 12)
                 .glassEffect(.regular.tint(.accentColor), in: Capsule())

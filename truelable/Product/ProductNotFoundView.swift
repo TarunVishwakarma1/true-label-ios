@@ -48,7 +48,7 @@ struct ProductNotFoundView: View {
                 } label: {
                     Text("Help Us Add It")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.accentLabel)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 14)
                         .frame(maxWidth: .infinity)

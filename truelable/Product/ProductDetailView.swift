@@ -5,9 +5,12 @@
 
 import SwiftUI
 
-/// Nutrition facts for a product the scan recognized. Same chrome language
-/// as every other screen — custom top bar, glass cards, dot-grid/aurora
-/// backdrop — nothing new invented for this one screen.
+/// Nutrition facts for a scanned product. Cards here are opaque, not glass
+/// or Material — a translucent surface re-sampling an animating backdrop
+/// behind it degrades over sustained use (both `.glassEffect()` and
+/// `Material` did this), and no amount of tuning fixed that; removing the
+/// live backdrop-sampling entirely does. The aurora still animates in the
+/// background and margins, just not blurred through the cards.
 struct ProductDetailView: View {
     var product: ProductInfo
     var onDismiss: () -> Void
@@ -16,6 +19,14 @@ struct ProductDetailView: View {
     /// by default — `@ScaledMetric` keeps this one respecting Dynamic Type
     /// instead of silently opting out of an accessibility setting.
     @ScaledMetric private var calorieFontSize: CGFloat = 40
+
+    private let cardColor = Color(red: 0.07, green: 0.07, blue: 0.09)
+    private let warningCardColor = Color(red: 0.18, green: 0.1, blue: 0.05)
+
+    private func cardBackground(_ shape: some InsettableShape, warning: Bool = false) -> some View {
+        shape.fill(warning ? warningCardColor : cardColor)
+            .overlay(shape.strokeBorder(.white.opacity(0.08), lineWidth: 1))
+    }
 
     var body: some View {
         ZStack {
@@ -30,14 +41,10 @@ struct ProductDetailView: View {
                         if hasBadges {
                             badgesRow
                         }
-                        caloriesCard
-                        nutrientsCard
+                        nutritionFactsCard
                         ingredientsCard
-                        if !product.allergens.isEmpty {
-                            allergensCard
-                        }
-                        if !product.additives.isEmpty {
-                            additivesCard
+                        if !product.allergens.isEmpty || !product.additives.isEmpty {
+                            safetyCard
                         }
                     }
                     .padding(20)
@@ -61,7 +68,7 @@ struct ProductDetailView: View {
                     .foregroundStyle(.white)
                     .frame(width: 20, height: 20)
                     .padding(12)
-                    .glassEffect(.regular, in: Circle())
+                    .background(cardBackground(Circle()))
             }
             .buttonStyle(ScaleButtonStyle())
             .accessibilityLabel("Close")
@@ -84,8 +91,11 @@ struct ProductDetailView: View {
         }
     }
 
-    private var caloriesCard: some View {
-        HStack {
+    /// Calories header + the full nutrient list as one panel — a real
+    /// nutrition label is one unified block, not scattered cards, and it's
+    /// one `.glassEffect()` surface instead of two.
+    private var nutritionFactsCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Calories")
                     .font(.caption)
@@ -94,15 +104,11 @@ struct ProductDetailView: View {
                     .font(.system(size: calorieFontSize, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
             }
-            Spacer()
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
-    }
+            .padding(.bottom, 14)
 
-    private var nutrientsCard: some View {
-        VStack(spacing: 0) {
+            Divider().overlay(.white.opacity(0.15))
+                .padding(.bottom, 6)
+
             ForEach(Array(product.nutrients.enumerated()), id: \.element.id) { index, nutrient in
                 if index > 0 {
                     Divider().overlay(.white.opacity(0.1))
@@ -129,9 +135,9 @@ struct ProductDetailView: View {
                 .accessibilityElement(children: .combine)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 4)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(cardBackground(RoundedRectangle(cornerRadius: 20)))
     }
 
     private var ingredientsCard: some View {
@@ -145,46 +151,54 @@ struct ProductDetailView: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
+        .background(cardBackground(RoundedRectangle(cornerRadius: 20)))
     }
 
-    private var allergensCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Allergens")
-                .font(.subheadline.bold())
-                .foregroundStyle(.white)
-            Text(product.allergens.capitalized)
-                .font(.footnote)
-                .foregroundStyle(.white.opacity(0.7))
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular.tint(.orange.opacity(0.25)), in: RoundedRectangle(cornerRadius: 20))
-    }
+    /// Allergens + additives together — both are "things to watch out for",
+    /// and merging them is one fewer glass surface competing for GPU time
+    /// with everything else on this screen.
+    private var safetyCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if !product.allergens.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Allergens")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.white)
+                    Text(product.allergens.capitalized)
+                        .font(.footnote)
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+            }
 
-    private var additivesCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Preservatives & Additives")
-                .font(.subheadline.bold())
-                .foregroundStyle(.white)
+            if !product.allergens.isEmpty && !product.additives.isEmpty {
+                Divider().overlay(.white.opacity(0.15))
+            }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(product.additives, id: \.self) { code in
-                        Text(code)
-                            .font(.caption.bold().monospaced())
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(.white.opacity(0.12), in: Capsule())
-                            .accessibilityLabel("Food additive \(code)")
+            if !product.additives.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Preservatives & Additives")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.white)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(product.additives, id: \.self) { code in
+                                Text(code)
+                                    .font(.caption.bold().monospaced())
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(.white.opacity(0.12), in: Capsule())
+                                    .accessibilityLabel("Food additive \(code)")
+                            }
+                        }
                     }
                 }
             }
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
+        .background(cardBackground(RoundedRectangle(cornerRadius: 20), warning: !product.allergens.isEmpty))
     }
 
     // MARK: - Badges (NOVA / Nutri-Score / dietary flags)
@@ -224,13 +238,18 @@ struct ProductDetailView: View {
 
     /// Icon alongside the (already descriptive) label, not a bare color
     /// swatch — color alone isn't a reliable signal for colorblind users.
+    /// A plain tinted background, not `.glassEffect()`: these are small,
+    /// numerous, and horizontally scrolling — real-time glass compositing
+    /// on every one of them, on top of everything else on this screen, is
+    /// the kind of stacking that made this screen laggy in the first place.
     private func badge(title: String, icon: String, tint: Color) -> some View {
         Label(title, systemImage: icon)
             .font(.caption.bold())
             .foregroundStyle(.white)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .glassEffect(.regular.tint(tint.opacity(0.35)), in: Capsule())
+            .background(tint.opacity(0.35), in: Capsule())
+            .overlay(Capsule().strokeBorder(.white.opacity(0.15), lineWidth: 1))
     }
 
     private func novaLabel(_ group: Int) -> String {

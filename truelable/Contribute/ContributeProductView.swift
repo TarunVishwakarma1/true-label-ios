@@ -110,7 +110,7 @@ struct ContributeProductView: View {
                 } label: {
                     Text("Open Camera")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.accentLabel)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 14)
                         .frame(maxWidth: .infinity)
@@ -159,7 +159,7 @@ struct ContributeProductView: View {
             } label: {
                 Text("Done")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.accentLabel)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 14)
                     .frame(maxWidth: .infinity)
@@ -240,7 +240,7 @@ private struct ReviewStepView: View {
             } label: {
                 Text("Yes, Submit")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.accentLabel)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 14)
                     .frame(maxWidth: .infinity)
