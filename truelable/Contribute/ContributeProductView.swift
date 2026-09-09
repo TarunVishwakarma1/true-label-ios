@@ -82,7 +82,7 @@ struct ContributeProductView: View {
         case .processing:
             processingStep
         case .review(let data):
-            reviewStep(data)
+            ReviewStepView(data: data, onSubmit: submit, onRetake: { step = .capture })
         case .success:
             successStep
         }
@@ -138,53 +138,6 @@ struct ContributeProductView: View {
         }
     }
 
-    private func reviewStep(_ data: ExtractedProductData) -> some View {
-        VStack(spacing: 20) {
-            Text("Does this look correct?")
-                .font(.title3.bold())
-                .foregroundStyle(.white)
-
-            VStack(alignment: .leading, spacing: 16) {
-                labeledField(title: "Product Name", value: data.guessedName)
-                labeledField(title: "Ingredients", value: data.ingredients)
-                labeledField(title: "Allergens", value: data.allergens.isEmpty ? "None detected" : data.allergens.joined(separator: ", "))
-            }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
-
-            Button {
-                submit(data)
-            } label: {
-                Text("Yes, Submit")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 14)
-                    .frame(maxWidth: .infinity)
-                    .glassEffect(.regular.tint(.accentColor), in: Capsule())
-            }
-            .buttonStyle(ScaleButtonStyle())
-
-            Button("Retake Photo") {
-                step = .capture
-            }
-            .font(.subheadline)
-            .foregroundStyle(.white.opacity(0.6))
-        }
-    }
-
-    private func labeledField(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title.uppercased())
-                .font(.caption2.bold())
-                .foregroundStyle(.white.opacity(0.45))
-            Text(value)
-                .font(.subheadline)
-                .foregroundStyle(.white)
-        }
-    }
-
     private var successStep: some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle.fill")
@@ -221,7 +174,7 @@ struct ContributeProductView: View {
         step = .processing
         Task {
             let data = (try? await IngredientAPIClient.extractIngredients(image: image))
-                ?? ExtractedProductData(guessedName: "Unknown", ingredients: "", allergens: [])
+                ?? ExtractedProductData(guessedName: "Unknown", ingredients: "", allergens: [], rawText: "")
             withAnimation { step = .review(data) }
         }
     }
@@ -231,6 +184,94 @@ struct ContributeProductView: View {
         Task {
             _ = try? await IngredientAPIClient.submitContribution(barcode: barcode, data: data)
             withAnimation { step = .success }
+        }
+    }
+}
+
+/// Editable version of the review screen. Owns its own draft state, seeded
+/// once from the OCR result — `data.rawText` (the untouched Vision output)
+/// is never shown or editable here, only carried through to submission, so
+/// the backend can always tell what OCR actually found vs. what the user
+/// changed. That's the real defense against fabricated submissions: not
+/// preventing edits, but never losing the ability to check them.
+private struct ReviewStepView: View {
+    var onSubmit: (ExtractedProductData) -> Void
+    var onRetake: () -> Void
+
+    @State private var name: String
+    @State private var ingredients: String
+    @State private var allergensText: String
+    private let rawText: String
+
+    init(data: ExtractedProductData, onSubmit: @escaping (ExtractedProductData) -> Void, onRetake: @escaping () -> Void) {
+        self.onSubmit = onSubmit
+        self.onRetake = onRetake
+        _name = State(initialValue: data.guessedName)
+        _ingredients = State(initialValue: data.ingredients)
+        _allergensText = State(initialValue: data.allergens.joined(separator: ", "))
+        rawText = data.rawText
+    }
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Does this look correct?")
+                .font(.title3.bold())
+                .foregroundStyle(.white)
+
+            Text("Edit anything that's wrong before submitting.")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.5))
+
+            VStack(alignment: .leading, spacing: 16) {
+                editableField(title: "Product Name", text: $name)
+                editableField(title: "Ingredients", text: $ingredients, multiline: true)
+                editableField(title: "Allergens (comma-separated)", text: $allergensText)
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
+
+            Button {
+                let allergens = allergensText
+                    .split(separator: ",")
+                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                    .filter { !$0.isEmpty }
+                onSubmit(ExtractedProductData(guessedName: name, ingredients: ingredients, allergens: allergens, rawText: rawText))
+            } label: {
+                Text("Yes, Submit")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 14)
+                    .frame(maxWidth: .infinity)
+                    .glassEffect(.regular.tint(.accentColor), in: Capsule())
+            }
+            .buttonStyle(ScaleButtonStyle())
+            .disabled(ingredients.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+            Button("Retake Photo", action: onRetake)
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.6))
+        }
+    }
+
+    private func editableField(title: String, text: Binding<String>, multiline: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title.uppercased())
+                .font(.caption2.bold())
+                .foregroundStyle(.white.opacity(0.45))
+
+            if multiline {
+                TextEditor(text: text)
+                    .font(.subheadline)
+                    .foregroundStyle(.white)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: 80)
+            } else {
+                TextField("", text: text)
+                    .font(.subheadline)
+                    .foregroundStyle(.white)
+            }
         }
     }
 }

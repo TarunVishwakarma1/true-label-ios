@@ -29,9 +29,22 @@
 		D4A1B08C3050791400FC5D00 /* truelableUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = truelableUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D4A1B0903050791400FC5D00 /* Exceptions for "truelable" folder in "truelable" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = D4A1B0743050791200FC5D00 /* truelable */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		D4A1B0773050791200FC5D00 /* truelable */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D4A1B0903050791400FC5D00 /* Exceptions for "truelable" folder in "truelable" target */,
+			);
 			path = truelable;
 			sourceTree = "<group>";
 		};
@@ -400,6 +413,7 @@
 				DEVELOPMENT_TEAM = 52Y25H7942;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = truelable/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is used to scan barcodes and QR codes on product packaging.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -433,6 +447,7 @@
 				DEVELOPMENT_TEAM = 52Y25H7942;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = truelable/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is used to scan barcodes and QR codes on product packaging.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
