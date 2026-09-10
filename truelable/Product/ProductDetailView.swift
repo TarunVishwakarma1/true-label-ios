@@ -20,8 +20,40 @@ struct ProductDetailView: View {
     /// instead of silently opting out of an accessibility setting.
     @ScaledMetric private var calorieFontSize: CGFloat = 40
 
+    @AppStorage("healthProfile.watchingSugar") private var watchingSugar = false
+    @AppStorage("healthProfile.watchingSodium") private var watchingSodium = false
+    @State private var showingHealthProfile = false
+    @State private var alternatives: [ProductAlternative] = []
+
     private let cardColor = Color(red: 0.07, green: 0.07, blue: 0.09)
     private let warningCardColor = Color(red: 0.18, green: 0.1, blue: 0.05)
+
+    private var primaryWatch: WatchedNutrient? {
+        if watchingSugar { return .sugar }
+        if watchingSodium { return .sodium }
+        return nil
+    }
+
+    /// The primary watched nutrient's raw per-100g value, if this product
+    /// has one — `nil` means "don't know", never treated as "low".
+    private func rawValue(for nutrient: WatchedNutrient) -> Double? {
+        switch nutrient {
+        case .sugar: return product.sugarGrams
+        case .sodium: return product.sodiumMg
+        }
+    }
+
+    /// Watched nutrient sorted first, everything else keeping its original
+    /// order — matches the website's `profile` phase.
+    private var orderedNutrients: [Nutrient] {
+        guard let watch = primaryWatch else { return product.nutrients }
+        var rest = product.nutrients
+        if let index = rest.firstIndex(where: { $0.name.localizedCaseInsensitiveContains(watch.rawValue) }) {
+            let flagged = rest.remove(at: index)
+            return [flagged] + rest
+        }
+        return rest
+    }
 
     private func cardBackground(_ shape: some InsettableShape, warning: Bool = false) -> some View {
         shape.fill(warning ? warningCardColor : cardColor)
@@ -42,6 +74,9 @@ struct ProductDetailView: View {
                             badgesRow
                         }
                         nutritionFactsCard
+                        if primaryWatch != nil {
+                            personalizedCard
+                        }
                         ingredientsCard
                         if !product.allergens.isEmpty || !product.additives.isEmpty {
                             safetyCard
@@ -52,10 +87,35 @@ struct ProductDetailView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .sheet(isPresented: $showingHealthProfile) {
+            HealthProfileSheet(onDismiss: { showingHealthProfile = false })
+        }
+        .task(id: primaryWatch) {
+            guard let watch = primaryWatch else {
+                alternatives = []
+                return
+            }
+            alternatives = (try? await ProductAPIClient.fetchAlternatives(barcode: product.barcode, sortBy: watch.apiKey)) ?? []
+        }
     }
 
     private var topBar: some View {
         HStack {
+            Button {
+                showingHealthProfile = true
+            } label: {
+                Image(systemName: "person.crop.circle")
+                    .font(.headline)
+                    .foregroundStyle(HealthProfile.isActive ? TLColor.accent : .white)
+                    .frame(width: 20, height: 20)
+                    .padding(12)
+                    .background(cardBackground(Circle()))
+            }
+            .buttonStyle(ScaleButtonStyle())
+            .accessibilityLabel("Health profile")
+
+            Spacer()
+
             Text("Nutrition Facts")
                 .font(.headline)
                 .foregroundStyle(.white)
@@ -79,9 +139,17 @@ struct ProductDetailView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(product.name)
-                .font(.title2.bold())
-                .foregroundStyle(.white)
+            HStack(alignment: .firstTextBaseline) {
+                Text(product.name)
+                    .font(.title2.bold())
+                    .foregroundStyle(.white)
+                Spacer()
+                if product.verificationCount > 0 {
+                    Text("\(product.verificationCount) verified")
+                        .font(.system(.caption2, design: .monospaced))
+                        .foregroundStyle(TLColor.accent)
+                }
+            }
             Text(product.brand)
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.6))
@@ -109,30 +177,72 @@ struct ProductDetailView: View {
             Divider().overlay(.white.opacity(0.15))
                 .padding(.bottom, 6)
 
-            ForEach(Array(product.nutrients.enumerated()), id: \.element.id) { index, nutrient in
+            ForEach(Array(orderedNutrients.enumerated()), id: \.element.id) { index, nutrient in
                 if index > 0 {
                     Divider().overlay(.white.opacity(0.1))
                 }
-                HStack {
-                    Text(nutrient.name)
-                        .font(.subheadline)
-                        .foregroundStyle(.white)
-                    Spacer()
-                    Text(nutrient.amount)
-                        .font(.subheadline.monospacedDigit())
-                        .foregroundStyle(.white.opacity(0.75))
-                    if let dv = nutrient.dailyValuePercent {
-                        Text("\(dv)%")
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.white.opacity(0.45))
-                            .frame(width: 40, alignment: .trailing)
-                    }
-                }
-                .padding(.vertical, 10)
-                // Without this, VoiceOver stops on "Total Fat", then "9.8g",
-                // then "13%" as three separate swipes instead of one
-                // coherent "Total Fat, 9.8g, 13%" reading.
-                .accessibilityElement(children: .combine)
+                nutrientRow(nutrient, isWatched: index == 0 && primaryWatch != nil)
+                    .padding(.vertical, 10)
+                    // Without this, VoiceOver stops on "Total Fat", then
+                    // "9.8g", then "13%" as three separate swipes instead
+                    // of one coherent "Total Fat, 9.8g, 13%" reading.
+                    .accessibilityElement(children: .combine)
+            }
+
+            if let sugarGrams = product.sugarGrams {
+                Divider().overlay(.white.opacity(0.15))
+                    .padding(.vertical, 6)
+                SugarTeaspoonsView(sugarGrams: sugarGrams)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(cardBackground(RoundedRectangle(cornerRadius: 20)))
+    }
+
+    @ViewBuilder
+    private func nutrientRow(_ nutrient: Nutrient, isWatched: Bool) -> some View {
+        let flaggedHigh = isWatched && (primaryWatch.map { rawValue(for: $0).map($0.isHigh) ?? false } ?? false)
+
+        HStack {
+            Text(nutrient.name)
+                .font(.subheadline)
+                .foregroundStyle(.white)
+            Spacer()
+            Text(nutrient.amount)
+                .font(.subheadline.monospacedDigit())
+                .foregroundStyle(.white.opacity(0.75))
+            if let dv = nutrient.dailyValuePercent {
+                Text("\(dv)%")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.white.opacity(0.45))
+                    .frame(width: 40, alignment: .trailing)
+            }
+        }
+        .padding(.leading, isWatched ? 10 : 0)
+        .overlay(alignment: .leading) {
+            if isWatched {
+                Rectangle()
+                    .fill(flaggedHigh ? TLColor.warn : TLColor.accent)
+                    .frame(width: 2)
+            }
+        }
+    }
+
+    /// Matches the website's "profile" phase copy exactly. Only shown once
+    /// a watched nutrient is active (`primaryWatch != nil`), and the
+    /// alternative line only appears once a real one has actually loaded —
+    /// no category match is a legitimate, silent outcome, never faked.
+    private var personalizedCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Flagged first because you asked. Nothing else changes.")
+                .font(.footnote)
+                .foregroundStyle(.white.opacity(0.85))
+
+            if let alt = alternatives.first {
+                Text("Same shelf · \(alt.productName)")
+                    .font(.system(.caption2, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.5))
             }
         }
         .padding(20)

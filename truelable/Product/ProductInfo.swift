@@ -27,6 +27,14 @@ struct ProductInfo: Identifiable, Equatable {
     var isVegan: Bool?
     var isVegetarian: Bool?
     var isPalmOilFree: Bool?
+    var verified: Bool = false
+    var verificationCount: Int = 0
+    /// Raw grams/milligrams per 100g, threaded through separately from
+    /// `nutrients` (whose `amount` is a pre-formatted display string) so
+    /// the teaspoons visualization and health-profile flagging have real
+    /// numbers to do math on.
+    var sugarGrams: Double?
+    var sodiumMg: Double?
 }
 
 struct Nutrient: Identifiable, Equatable {

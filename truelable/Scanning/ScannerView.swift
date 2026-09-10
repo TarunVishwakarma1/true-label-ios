@@ -44,7 +44,13 @@ struct ScannerView: View {
     @State private var manualCode: String = ""
     @State private var didCopyQR = false
     @State private var productLookup: ProductLookupResult?
+    @State private var caretVisible = true
     @FocusState private var manualFieldFocused: Bool
+
+    /// Mirrors the website's `scan-demo.tsx`: `found = phase !== "scan"`.
+    /// Only meaningful while the viewfinder itself is on screen — briefly
+    /// true the instant a lookup starts, until the result sheet takes over.
+    private var found: Bool { phase == .submitting }
 
     // DataScannerViewController needs real camera hardware, so it's never
     // available in the simulator. Checked once at screen open — manual
@@ -72,7 +78,7 @@ struct ScannerView: View {
         .fullScreenCover(item: $productLookup) { lookup in
             switch lookup {
             case .found(let product):
-                ProductDetailView(product: product, onDismiss: finishProductLookup)
+                ProductFoundFlow(product: product, onDismiss: finishProductLookup)
             case .notFound(let code):
                 ProductNotFoundView(barcode: code, onDismiss: finishProductLookup)
             }
@@ -87,7 +93,10 @@ struct ScannerView: View {
             Spacer()
 
             if scannerAvailable, phase == .scanning || phase == .submitting {
-                viewfinder
+                VStack(spacing: 16) {
+                    statusBadge
+                    viewfinder
+                }
             } else if !scannerAvailable {
                 unavailableNotice
             }
@@ -134,11 +143,49 @@ struct ScannerView: View {
         .padding(.top, 8)
     }
 
+    /// Monospace status pill above the viewfinder, matching the website's
+    /// `scan-demo.tsx`: "POINT AT A BARCODE" with a blinking caret while
+    /// scanning, a solid-accent "FOUND · VERIFIED" pill the instant a
+    /// lookup starts.
+    private var statusBadge: some View {
+        HStack(spacing: 2) {
+            Text(found ? "FOUND · VERIFIED" : "POINT AT A BARCODE")
+            if !found {
+                Text("_").opacity(caretVisible ? 1 : 0)
+            }
+        }
+        .font(.system(.caption, design: .monospaced))
+        .fontWeight(.medium)
+        .tracking(1.2)
+        .foregroundStyle(found ? TLColor.ink : .white.opacity(0.85))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(found ? TLColor.accent : Color.white.opacity(0.1), in: Capsule())
+        .animation(.easeOutExpo(duration: 0.5), value: found)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.55).repeatForever(autoreverses: true)) {
+                caretVisible.toggle()
+            }
+        }
+    }
+
     private var viewfinder: some View {
         Color.clear
             .frame(width: 260, height: 260)
             .overlay(AnimatedGradientBorder(shape: RoundedRectangle(cornerRadius: 28)))
-            .overlay(ViewfinderCorners().stroke(.white, style: StrokeStyle(lineWidth: 3, lineCap: .round)))
+            .overlay(
+                ViewfinderCorners()
+                    .stroke(found ? TLColor.accent : .white, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .animation(.easeOutExpo(duration: 0.5), value: found)
+            )
+            .overlay {
+                // One animating line, not a background — cheap enough to
+                // stay well clear of the glass-over-animation lesson learned
+                // elsewhere in this app (see ProductDetailView's doc comment).
+                if phase == .scanning {
+                    ScanLine()
+                }
+            }
             .overlay {
                 if phase == .submitting {
                     ProgressView().tint(.white)
@@ -304,6 +351,29 @@ struct ScannerView: View {
         withAnimation {
             phase = .scanning
             manualCode = ""
+        }
+    }
+}
+
+/// A single accent line sweeping top-to-bottom while the viewfinder waits
+/// for a barcode — matches the website's `@keyframes scan` (2.2s, 6%→94%).
+private struct ScanLine: View {
+    @State private var atBottom = false
+
+    var body: some View {
+        GeometryReader { geo in
+            Rectangle()
+                .fill(TLColor.accent)
+                .frame(height: 2)
+                .shadow(color: TLColor.accent.opacity(0.8), radius: 6)
+                .offset(y: atBottom ? geo.size.height * 0.94 : geo.size.height * 0.06)
+                .opacity(0.9)
+        }
+        .allowsHitTesting(false)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true)) {
+                atBottom = true
+            }
         }
     }
 }
