@@ -15,10 +15,12 @@ import Foundation
 /// Arguments > Environment Variables, add `API_BASE_URL` with the full
 /// URL — it always wins over the compiled-in defaults below.
 enum APIEnvironment {
-    private static let developmentURL = "http://192.168.0.103:8080"
+    // private static let developmentURL = "http://168.144.69.231:8080"
+    private static let developmentURL = "https://api.truelabel.fun"
+
 
     /// No production deployment exists yet — update this once one does.
-    private static let productionURL = "https://api.truelabel.app"
+    private static let productionURL = "https://api.truelabel.fun"
 
     static var baseURL: URL {
         if let override = ProcessInfo.processInfo.environment["API_BASE_URL"],

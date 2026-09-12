@@ -47,7 +47,7 @@ enum ProductAPIClient {
     /// today) and returns the product with its refreshed verified/count.
     static func submitVerification(barcode: String) async throws -> ProductInfo {
         let country = currentCountry()
-        let deviceID = await UIDevice.current.identifierForVendor?.uuidString
+        let deviceID = UIDevice.current.identifierForVendor?.uuidString
 
         var request = URLRequest(
             url: APIEnvironment.baseURL.appendingPathComponent("/api/v1/products/verify")
@@ -208,3 +208,4 @@ private struct NutritionFactsDTO: Decodable {
         Int((grams * 1000).rounded())
     }
 }
+
