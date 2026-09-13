@@ -98,9 +98,52 @@ enum ProductAPIClient {
         return envelope.data ?? []
     }
 
+    /// Feeds the Verify tab: real products genuinely short of the
+    /// 3-verification threshold, excluding ones this device already voted
+    /// on. Never fabricated — an empty result (nothing left to check) is a
+    /// legitimate, expected outcome.
+    static func fetchNeedsVerification(limit: Int = 10) async throws -> [VerificationCandidate] {
+        let country = currentCountry()
+        let deviceID = await UIDevice.current.identifierForVendor?.uuidString
+
+        var components = URLComponents(
+            url: APIEnvironment.baseURL.appendingPathComponent("/api/v1/products/needs-verification"),
+            resolvingAgainstBaseURL: false
+        )!
+        var queryItems = [
+            URLQueryItem(name: "country", value: country),
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ]
+        if let deviceID {
+            queryItems.append(URLQueryItem(name: "device_id", value: deviceID))
+        }
+        components.queryItems = queryItems
+
+        let (data, response) = try await URLSession.shared.data(from: components.url!)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let envelope = try decoder.decode(ApiEnvelope<[VerificationCandidate]>.self, from: data)
+        return envelope.data ?? []
+    }
+
     private static func currentCountry() -> String {
         Locale.current.region?.identifier ?? "US"
     }
+}
+
+struct VerificationCandidate: Decodable, Identifiable {
+    var id: String { barcode }
+    var barcode: String
+    var productName: String
+    var brand: String?
+    var energyKcal: Double?
+    var sugar: Double?
+    var sodium: Double?
+    var verificationCount: Int
 }
 
 private struct VerifyRequestBody: Encodable {
@@ -158,7 +201,10 @@ private struct ProductResponseDTO: Decodable {
             verified: verified ?? false,
             verificationCount: verificationCount ?? 0,
             sugarGrams: nutritionFacts.sugar,
-            sodiumMg: nutritionFacts.sodium.map { $0 * 1000 }
+            sodiumMg: nutritionFacts.sodium.map { $0 * 1000 },
+            fatGrams: nutritionFacts.fat,
+            carbsGrams: nutritionFacts.carbs,
+            proteinGrams: nutritionFacts.protein
         )
     }
 }

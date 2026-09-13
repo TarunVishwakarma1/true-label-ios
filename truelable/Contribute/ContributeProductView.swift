@@ -20,10 +20,20 @@ struct ContributeProductView: View {
         case processing
         case review(ExtractedProductData)
         case success
+
+        var number: Int {
+            switch self {
+            case .capture: return 1
+            case .processing: return 2
+            case .review: return 3
+            case .success: return 4
+            }
+        }
     }
 
     @State private var step: Step = .capture
     @State private var isCameraPresented = false
+    @State private var didFinish = false
 
     private let cameraAvailable = UIImagePickerController.isSourceTypeAvailable(.camera)
 
@@ -34,8 +44,9 @@ struct ContributeProductView: View {
             // otherwise.
             DotGridBackground(isPaused: isCameraPresented)
 
-            VStack {
+            VStack(spacing: 20) {
                 topBar
+                stepIndicator
                 Spacer()
                 content
                 Spacer()
@@ -53,6 +64,7 @@ struct ContributeProductView: View {
             )
             .ignoresSafeArea()
         }
+        .sensoryFeedback(.success, trigger: didFinish)
     }
 
     private var topBar: some View {
@@ -72,6 +84,24 @@ struct ContributeProductView: View {
             .buttonStyle(ScaleButtonStyle())
         }
         .padding(.top, 8)
+    }
+
+    /// Same monospace HUD language as the rest of the app — this wizard
+    /// used to have no visual identity tying it back to TrueLabel at all.
+    private var stepIndicator: some View {
+        HStack(spacing: 6) {
+            ForEach(1...4, id: \.self) { n in
+                Capsule()
+                    .fill(n <= step.number ? TLColor.accent : Color.white.opacity(0.15))
+                    .frame(width: n == step.number ? 20 : 8, height: 4)
+                    .animation(.easeOutExpo(duration: 0.3), value: step.number)
+            }
+            Spacer()
+            Text("STEP \(step.number) / 4")
+                .font(.system(.caption2, design: .monospaced))
+                .tracking(1.2)
+                .foregroundStyle(.white.opacity(0.4))
+        }
     }
 
     @ViewBuilder
@@ -129,11 +159,9 @@ struct ContributeProductView: View {
 
     private var processingStep: some View {
         VStack(spacing: 16) {
-            ProgressView()
-                .tint(.white)
-                .scaleEffect(1.4)
+            ShimmerLabel(lineCount: 4)
             Text("Analyzing ingredient list…")
-                .font(.subheadline)
+                .font(.system(.subheadline, design: .monospaced))
                 .foregroundStyle(.white.opacity(0.7))
         }
     }
@@ -142,7 +170,7 @@ struct ContributeProductView: View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 44))
-                .foregroundStyle(.green)
+                .foregroundStyle(TLColor.accent)
 
             Text("Thanks for the help!")
                 .font(.title3.bold())
@@ -168,6 +196,7 @@ struct ContributeProductView: View {
             .buttonStyle(ScaleButtonStyle())
             .padding(.top, 12)
         }
+        .onAppear { didFinish = true }
     }
 
     private func startProcessing(_ image: UIImage) {
@@ -175,7 +204,7 @@ struct ContributeProductView: View {
         Task {
             let data = (try? await IngredientAPIClient.extractIngredients(image: image))
                 ?? ExtractedProductData(guessedName: "Unknown", ingredients: "", allergens: [], rawText: "")
-            withAnimation { step = .review(data) }
+            withAnimation(.easeOutExpo()) { step = .review(data) }
         }
     }
 
@@ -183,7 +212,7 @@ struct ContributeProductView: View {
         step = .processing
         Task {
             _ = try? await IngredientAPIClient.submitContribution(barcode: barcode, data: data)
-            withAnimation { step = .success }
+            withAnimation(.easeOutExpo()) { step = .success }
         }
     }
 }
@@ -194,6 +223,10 @@ struct ContributeProductView: View {
 /// the backend can always tell what OCR actually found vs. what the user
 /// changed. That's the real defense against fabricated submissions: not
 /// preventing edits, but never losing the ability to check them.
+///
+/// Rendered on the same physical-label paper as `ProductDetailView`'s
+/// nutrition card — fitting, since this screen is literally "confirm what
+/// the label says" before it becomes real data.
 private struct ReviewStepView: View {
     var onSubmit: (ExtractedProductData) -> Void
     var onRetake: () -> Void
@@ -222,14 +255,14 @@ private struct ReviewStepView: View {
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.5))
 
-            VStack(alignment: .leading, spacing: 16) {
-                editableField(title: "Product Name", text: $name)
-                editableField(title: "Ingredients", text: $ingredients, multiline: true)
-                editableField(title: "Allergens (comma-separated)", text: $allergensText)
+            NutritionLabelView {
+                VStack(alignment: .leading, spacing: 16) {
+                    editableField(title: "Product Name", text: $name)
+                    editableField(title: "Ingredients", text: $ingredients, multiline: true)
+                    editableField(title: "Allergens (comma-separated)", text: $allergensText)
+                }
             }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
+            .tiltResponsive(maxDegrees: 5)
 
             Button {
                 let allergens = allergensText
@@ -258,19 +291,19 @@ private struct ReviewStepView: View {
     private func editableField(title: String, text: Binding<String>, multiline: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title.uppercased())
-                .font(.caption2.bold())
-                .foregroundStyle(.white.opacity(0.45))
+                .font(.system(.caption2, design: .monospaced).bold())
+                .foregroundStyle(TLColor.paperMuted)
 
             if multiline {
                 TextEditor(text: text)
-                    .font(.subheadline)
-                    .foregroundStyle(.white)
+                    .font(.system(.subheadline, design: .monospaced))
+                    .foregroundStyle(TLColor.paperInk)
                     .scrollContentBackground(.hidden)
                     .frame(minHeight: 80)
             } else {
                 TextField("", text: text)
-                    .font(.subheadline)
-                    .foregroundStyle(.white)
+                    .font(.system(.subheadline, design: .monospaced))
+                    .foregroundStyle(TLColor.paperInk)
             }
         }
     }

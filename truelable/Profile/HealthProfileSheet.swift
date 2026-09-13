@@ -40,6 +40,8 @@ struct HealthProfileSheet: View {
             }
         }
         .preferredColorScheme(.dark)
+        .sensoryFeedback(.selection, trigger: watchingSugar)
+        .sensoryFeedback(.selection, trigger: watchingSodium)
     }
 }
 

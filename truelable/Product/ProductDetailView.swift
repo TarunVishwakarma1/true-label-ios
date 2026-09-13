@@ -13,6 +13,11 @@ import SwiftUI
 /// background and margins, just not blurred through the cards.
 struct ProductDetailView: View {
     var product: ProductInfo
+    /// Completes the scan→verify→detail continuity from `ScannerView`'s
+    /// viewfinder through `VerifyPromptView`'s card into this screen's
+    /// paper label — `nil` when shown on its own (e.g. the `#Preview`
+    /// below), which just skips the matched-geometry effect.
+    var namespace: Namespace.ID? = nil
     var onDismiss: () -> Void
 
     /// Fixed-size hero numbers don't grow with the user's chosen text size
@@ -73,6 +78,8 @@ struct ProductDetailView: View {
                         if hasBadges {
                             badgesRow
                         }
+                        HealthScoreCard(product: product, primaryWatch: primaryWatch)
+                        MacroBreakdownCard(product: product)
                         nutritionFactsCard
                         if primaryWatch != nil {
                             personalizedCard
@@ -97,6 +104,7 @@ struct ProductDetailView: View {
             }
             alternatives = (try? await ProductAPIClient.fetchAlternatives(barcode: product.barcode, sortBy: watch.apiKey)) ?? []
         }
+        .sensoryFeedback(.selection, trigger: primaryWatch)
     }
 
     private var topBar: some View {
@@ -159,45 +167,47 @@ struct ProductDetailView: View {
         }
     }
 
-    /// Calories header + the full nutrient list as one panel — a real
-    /// nutrition label is one unified block, not scattered cards, and it's
-    /// one `.glassEffect()` surface instead of two.
+    /// The physical label — this is the one place the "terminal chrome vs.
+    /// warm paper" tension in this app's design language pays off: dark HUD
+    /// everywhere else, but the actual nutrition truth prints on paper,
+    /// same `#F4EFE2` as the website's `LabelCard`. Tilt-responsive (see
+    /// `TiltEffect`) so it reads as something you're physically holding.
     private var nutritionFactsCard: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Calories")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.6))
-                Text("\(product.calories)")
-                    .font(.system(size: calorieFontSize, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-            }
-            .padding(.bottom, 14)
-
-            Divider().overlay(.white.opacity(0.15))
-                .padding(.bottom, 6)
-
-            ForEach(Array(orderedNutrients.enumerated()), id: \.element.id) { index, nutrient in
-                if index > 0 {
-                    Divider().overlay(.white.opacity(0.1))
+        NutritionLabelView(namespace: namespace) {
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Calories")
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(TLColor.paperMuted)
+                    Text("\(product.calories)")
+                        .font(.system(size: calorieFontSize, weight: .bold, design: .rounded))
+                        .foregroundStyle(TLColor.paperInk)
                 }
-                nutrientRow(nutrient, isWatched: index == 0 && primaryWatch != nil)
-                    .padding(.vertical, 10)
-                    // Without this, VoiceOver stops on "Total Fat", then
-                    // "9.8g", then "13%" as three separate swipes instead
-                    // of one coherent "Total Fat, 9.8g, 13%" reading.
-                    .accessibilityElement(children: .combine)
-            }
+                .padding(.bottom, 14)
 
-            if let sugarGrams = product.sugarGrams {
-                Divider().overlay(.white.opacity(0.15))
-                    .padding(.vertical, 6)
-                SugarTeaspoonsView(sugarGrams: sugarGrams)
+                Divider().overlay(.black.opacity(0.15))
+                    .padding(.bottom, 6)
+
+                ForEach(Array(orderedNutrients.enumerated()), id: \.element.id) { index, nutrient in
+                    if index > 0 {
+                        Divider().overlay(.black.opacity(0.1))
+                    }
+                    nutrientRow(nutrient, isWatched: index == 0 && primaryWatch != nil)
+                        .padding(.vertical, 10)
+                        // Without this, VoiceOver stops on "Total Fat", then
+                        // "9.8g", then "13%" as three separate swipes instead
+                        // of one coherent "Total Fat, 9.8g, 13%" reading.
+                        .accessibilityElement(children: .combine)
+                }
+
+                if let sugarGrams = product.sugarGrams {
+                    Divider().overlay(.black.opacity(0.15))
+                        .padding(.vertical, 6)
+                    SugarTeaspoonsView(sugarGrams: sugarGrams)
+                }
             }
         }
-        .padding(20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(cardBackground(RoundedRectangle(cornerRadius: 20)))
+        .tiltResponsive(maxDegrees: 6)
     }
 
     @ViewBuilder
@@ -206,16 +216,16 @@ struct ProductDetailView: View {
 
         HStack {
             Text(nutrient.name)
-                .font(.subheadline)
-                .foregroundStyle(.white)
+                .font(.system(.subheadline, design: .monospaced))
+                .foregroundStyle(TLColor.paperInk)
             Spacer()
             Text(nutrient.amount)
-                .font(.subheadline.monospacedDigit())
-                .foregroundStyle(.white.opacity(0.75))
+                .font(.system(.subheadline, design: .monospaced).monospacedDigit())
+                .foregroundStyle(TLColor.paperInk.opacity(0.8))
             if let dv = nutrient.dailyValuePercent {
                 Text("\(dv)%")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.white.opacity(0.45))
+                    .font(.system(.caption, design: .monospaced).monospacedDigit())
+                    .foregroundStyle(TLColor.paperMuted)
                     .frame(width: 40, alignment: .trailing)
             }
         }

@@ -26,26 +26,23 @@ struct ScannerView: View {
         case invalidBarcode(String)
     }
 
-    /// Identifiable so it can drive a single `.fullScreenCover(item:)` for
-    /// whichever destination a barcode lookup lands on.
-    private enum ProductLookupResult: Identifiable, Equatable {
-        case found(ProductInfo)
-        case notFound(String)
-
-        var id: String {
-            switch self {
-            case .found(let info): return info.barcode
-            case .notFound(let code): return code
-            }
-        }
-    }
-
     @State private var phase: Phase = .scanning
     @State private var manualCode: String = ""
     @State private var didCopyQR = false
-    @State private var productLookup: ProductLookupResult?
+    /// In-place, not a `.fullScreenCover` — a separate cover is a distinct
+    /// UIKit presentation, and `matchedGeometryEffect` can't interpolate
+    /// across that boundary. Keeping the found-flow inside this view's own
+    /// hierarchy is what lets the viewfinder visually grow into the result
+    /// card instead of hard-cutting to a new screen.
+    @State private var foundProduct: ProductInfo?
+    /// "Not found" has no continuity story (there's no scanned object to
+    /// grow into) — a real `.fullScreenCover` for that case is simpler and
+    /// exactly as good.
+    @State private var notFoundCode: NotFoundBarcode?
+    @State private var networkError = false
     @State private var caretVisible = true
     @FocusState private var manualFieldFocused: Bool
+    @Namespace private var labelSpace
 
     /// Mirrors the website's `scan-demo.tsx`: `found = phase !== "scan"`.
     /// Only meaningful while the viewfinder itself is on screen — briefly
@@ -67,7 +64,7 @@ struct ScannerView: View {
                 // gesture recognizers could steal from.
                 BarcodeScannerRepresentable(onScan: handle, isScanningActive: !manualFieldFocused && phase == .scanning) { chrome }
             } else {
-                PremiumBackground(isPaused: productLookup != nil)
+                PremiumBackground(isPaused: foundProduct != nil || notFoundCode != nil)
                     .overlay { chrome }
             }
         }
@@ -75,14 +72,19 @@ struct ScannerView: View {
         .preferredColorScheme(.dark)
         .onAppear { print("[ScannerView] appeared") }
         .onDisappear { print("[ScannerView] disappeared") }
-        .fullScreenCover(item: $productLookup) { lookup in
-            switch lookup {
-            case .found(let product):
-                ProductFoundFlow(product: product, onDismiss: finishProductLookup)
-            case .notFound(let code):
-                ProductNotFoundView(barcode: code, onDismiss: finishProductLookup)
+        .overlay {
+            if let product = foundProduct {
+                ProductFoundFlow(product: product, namespace: labelSpace, onDismiss: finishProductLookup)
+                    .transition(.opacity)
             }
         }
+        .fullScreenCover(item: $notFoundCode) { item in
+            ProductNotFoundView(barcode: item.code, onDismiss: finishProductLookup)
+        }
+        .fullScreenCover(isPresented: $networkError) {
+            NetworkErrorView(onDismiss: finishProductLookup)
+        }
+        .sensoryFeedback(.success, trigger: foundProduct?.barcode)
     }
 
     @ViewBuilder
@@ -188,9 +190,14 @@ struct ScannerView: View {
             }
             .overlay {
                 if phase == .submitting {
-                    ProgressView().tint(.white)
+                    ShimmerLabel(lineCount: 3, height: 140)
+                        .frame(width: 220)
                 }
             }
+            // The source end of the scan→verify→detail continuity — this
+            // square viewfinder grows into VerifyPromptView's card the
+            // instant a product is found (see `handle(_:)` below).
+            .matchedGeometryEffect(id: "scannedLabel", in: labelSpace)
     }
 
     private var unavailableNotice: some View {
@@ -319,15 +326,37 @@ struct ScannerView: View {
             let normalized = BarcodeChecksum.normalized(code)
             phase = .submitting
             Task {
-                let product = try? await ProductAPIClient.lookupProduct(barcode: normalized)
-                withAnimation { phase = .showingProduct }
-                productLookup = product.map(ProductLookupResult.found) ?? .notFound(code)
+                // A real connectivity failure (offline, timed out, host
+                // unreachable) and a genuine "not in the catalogue" used to
+                // collapse into the same screen via `try?` swallowing both.
+                // They're different situations — one means try again later,
+                // the other means help add it — so they're distinguished here.
+                do {
+                    let product = try await ProductAPIClient.lookupProduct(barcode: normalized)
+                    withAnimation(.easeOutExpo(duration: 0.6)) {
+                        phase = .showingProduct
+                        if let product {
+                            foundProduct = product
+                        } else {
+                            notFoundCode = NotFoundBarcode(code: code)
+                        }
+                    }
+                } catch {
+                    withAnimation(.easeOutExpo(duration: 0.6)) {
+                        phase = .showingProduct
+                        networkError = true
+                    }
+                }
             }
         }
     }
 
     private func finishProductLookup() {
-        productLookup = nil
+        withAnimation(.easeOutExpo(duration: 0.4)) {
+            foundProduct = nil
+        }
+        notFoundCode = nil
+        networkError = false
         reset()
     }
 
@@ -376,6 +405,12 @@ private struct ScanLine: View {
             }
         }
     }
+}
+
+/// Wraps a barcode string as `Identifiable` for `.fullScreenCover(item:)`.
+private struct NotFoundBarcode: Identifiable {
+    var id: String { code }
+    let code: String
 }
 
 /// Four corner brackets, the classic scanner-reticle targeting mark.

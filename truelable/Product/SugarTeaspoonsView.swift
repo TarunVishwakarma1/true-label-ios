@@ -26,12 +26,12 @@ struct SugarTeaspoonsView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 Text("Sugar, per 100g")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.6))
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(TLColor.paperMuted)
                 Spacer()
                 Text(sugarGrams.formatted(.number.precision(.fractionLength(0...1))) + " g")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.white.opacity(0.85))
+                    .font(.system(.caption, design: .monospaced).monospacedDigit())
+                    .foregroundStyle(TLColor.paperInk)
             }
 
             HStack(spacing: 4) {
@@ -44,7 +44,7 @@ struct SugarTeaspoonsView: View {
 
             Text("≈\(teaspoons) teaspoon\(teaspoons == 1 ? "" : "s") · \(percentOfDay)% of a 50 g day")
                 .font(.system(.caption2, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(TLColor.paperMuted)
         }
         .onAppear { revealed = true }
     }
@@ -67,7 +67,7 @@ struct SugarTeaspoonsView: View {
 
 #Preview {
     ZStack {
-        Color.black.ignoresSafeArea()
+        TLColor.paper.ignoresSafeArea()
         SugarTeaspoonsView(sugarGrams: 26)
             .padding(24)
     }

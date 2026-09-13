@@ -20,14 +20,16 @@ struct ProductNotFoundView: View {
             // otherwise this aurora keeps rendering, unseen, underneath it.
             DotGridBackground(isPaused: isContributing)
 
-            VStack(spacing: 16) {
+            VStack(spacing: 20) {
                 Spacer()
+
+                statusBadge
 
                 Image(systemName: "questionmark.square.dashed")
                     .font(.system(size: 44))
                     .foregroundStyle(.white.opacity(0.7))
 
-                Text("This product isn't in our catalogue yet")
+                Text("Not in the catalogue yet")
                     .font(.title3.bold())
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
@@ -39,6 +41,7 @@ struct ProductNotFoundView: View {
 
                 Text(barcode)
                     .font(.system(.footnote, design: .monospaced))
+                    .tracking(1)
                     .foregroundStyle(.white.opacity(0.4))
 
                 Spacer()
@@ -73,6 +76,20 @@ struct ProductNotFoundView: View {
         .fullScreenCover(isPresented: $isContributing) {
             ContributeProductView(barcode: barcode, onFinished: onDismiss)
         }
+    }
+
+    /// Same monospace HUD-status language as `ScannerView`'s badge — this
+    /// screen used to look like a different app pasted into this one.
+    private var statusBadge: some View {
+        Text("NOT FOUND")
+            .font(.system(.caption, design: .monospaced))
+            .fontWeight(.medium)
+            .tracking(1.2)
+            .foregroundStyle(TLColor.warn)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(TLColor.warn.opacity(0.15), in: Capsule())
+            .overlay(Capsule().strokeBorder(TLColor.warn.opacity(0.4)))
     }
 
     private var topBar: some View {

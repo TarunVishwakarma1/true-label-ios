@@ -32,8 +32,20 @@ enum WatchedNutrient: String, CaseIterable, Identifiable {
         }
     }
 
+    /// UK FSA "low" threshold per 100g — same reference as `highThresholdPer100g`.
+    var lowThresholdPer100g: Double {
+        switch self {
+        case .sugar: return 5
+        case .sodium: return 120 // mg
+        }
+    }
+
     func isHigh(_ amountPer100g: Double) -> Bool {
         amountPer100g >= highThresholdPer100g
+    }
+
+    func isLow(_ amountPer100g: Double) -> Bool {
+        amountPer100g <= lowThresholdPer100g
     }
 }
 

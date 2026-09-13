@@ -35,6 +35,48 @@ struct ProductInfo: Identifiable, Equatable {
     /// numbers to do math on.
     var sugarGrams: Double?
     var sodiumMg: Double?
+    var fatGrams: Double?
+    var carbsGrams: Double?
+    var proteinGrams: Double?
+
+    /// A derived 0–100 estimate from real published signals (Nutri-Score
+    /// grade + NOVA processing group) — not an official industry number,
+    /// so it's always shown with the "estimated from…" caption
+    /// (`HealthScoreCard`) rather than presented as authoritative. `nil`
+    /// when neither input exists, rather than guessing.
+    var estimatedHealthScore: Int? {
+        guard nutriscoreGrade != nil || novaGroup != nil else { return nil }
+        var score = 100
+        switch nutriscoreGrade?.lowercased() {
+        case "a": break
+        case "b": score -= 10
+        case "c": score -= 25
+        case "d": score -= 40
+        case "e": score -= 55
+        default: break
+        }
+        switch novaGroup {
+        case 2: score -= 5
+        case 3: score -= 10
+        case 4: score -= 15
+        default: break
+        }
+        return max(0, min(100, score))
+    }
+
+    var healthVerdict: (headline: String, color: HealthVerdictColor)? {
+        guard let score = estimatedHealthScore else { return nil }
+        switch score {
+        case 80...: return ("A genuinely good pick", .good)
+        case 60..<80: return ("Fine now and then", .fair)
+        case 40..<60: return ("Worth a second look", .fair)
+        default: return ("Better as a rare treat", .poor)
+        }
+    }
+}
+
+enum HealthVerdictColor {
+    case good, fair, poor
 }
 
 struct Nutrient: Identifiable, Equatable {
