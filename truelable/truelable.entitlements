@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Not referenced by the project on purpose.
+
+  Sign in with Apple needs a paid Apple Developer Program membership: a
+  personal team cannot create a provisioning profile with the capability, and
+  signing fails outright rather than degrading.
+
+  To turn it on once you have a paid team, two switches, together:
+    1. Set CODE_SIGN_ENTITLEMENTS = truelable/truelable.entitlements on the
+       truelable target (Debug and Release), and enable Sign in with Apple on
+       the App ID in the developer portal.
+    2. Set Capabilities.signInWithApple = true in Core/Capabilities.swift.
+
+  The backend side is already live and needs no change — it verifies Apple
+  identity tokens whenever the app starts sending them.
+-->
+<plist version="1.0">
+<dict>
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+</dict>
+</plist>

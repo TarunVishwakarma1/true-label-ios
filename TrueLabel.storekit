@@ -1,0 +1,89 @@
+{
+  "identifier" : "TrueLabelPlus",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_applicationInternalID" : "",
+    "_developerTeamID" : "52Y25H7942",
+    "_failTransactionsEnabled" : false,
+    "_lastSynced" : 0,
+    "_locale" : "en_IN",
+    "_storefront" : "IND",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21600001",
+      "localizations" : [
+
+      ],
+      "name" : "TrueLabel Plus",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "799.00",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6001",
+          "introductoryOffer" : {
+            "internalID" : "6101",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P2W"
+          },
+          "localizations" : [
+            {
+              "description" : "Trends, four-way compare and ranked swaps. About ₹67 a month.",
+              "displayName" : "Plus Yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "fun.truelabel.plus.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Plus Yearly",
+          "subscriptionGroupID" : "21600001",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "99.00",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "6002",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Trends, four-way compare and ranked swaps. Cancel anytime.",
+              "displayName" : "Plus Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "fun.truelabel.plus.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Plus Monthly",
+          "subscriptionGroupID" : "21600001",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
