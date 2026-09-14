@@ -150,6 +150,16 @@ struct ScanScreen: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
                 .glassEffect(.regular, in: .capsule)
+                // The frame below is a pure visual guide with nothing for
+                // VoiceOver to add — this text already says everything a
+                // non-visual user needs, and a barcode-scanning camera has
+                // no accessible fallback here besides "Type the barcode"
+                // in the bottom bar, which is its own real control already.
+                .accessibilityLabel(
+                    cameraActive
+                        ? "Point your camera at a barcode to scan, or use Type the barcode below"
+                        : "Camera off while you read the result"
+                )
 
             ZStack {
                 RoundedRectangle(cornerRadius: TL.R.xl, style: .continuous)
@@ -162,6 +172,7 @@ struct ScanScreen: View {
                 }
             }
             .frame(width: 250, height: 250)
+            .accessibilityHidden(true)
         }
     }
 
@@ -349,6 +360,13 @@ struct ManualEntrySheet: View {
                     .padding(18)
                     .glassEffect(.regular, in: RoundedRectangle(cornerRadius: TL.R.md, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: TL.R.md, style: .continuous).strokeBorder(valid ? TL.accent : .clear))
+                    // Without this, VoiceOver reads the placeholder digits
+                    // themselves as the field's name — a real number read
+                    // out is a strange way to hear "this is the barcode
+                    // field." The digit count already updates live below,
+                    // so the hint doesn't need to repeat it.
+                    .accessibilityLabel("Barcode")
+                    .accessibilityHint("8, 12, or 13 digits")
                     .onChange(of: code) { _, new in
                         let filtered = String(new.filter(\.isNumber).prefix(13))
                         if filtered != new { code = filtered }

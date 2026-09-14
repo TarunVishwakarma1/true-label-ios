@@ -97,6 +97,10 @@ struct VerifyView: View {
         return VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 12) {
                 ProductThumb(url: c.imageURL, size: 56, radius: 16)
+                    // The product name text right next to it already
+                    // names the item — an unlabeled photo would just be a
+                    // redundant, uninformative stop for VoiceOver.
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(c.productName).font(.displayS).lineLimit(2)
                     if let brand = c.brand { Text(brand).font(.footnote).foregroundStyle(TL.fg2).lineLimit(1) }
@@ -125,6 +129,11 @@ struct VerifyView: View {
                 Pill(text: "MATCHES", color: TL.accent, icon: "checkmark", filled: true)
                     .opacity(min(max(drag.width / 70, 0), 1))
                     .padding(16)
+                    // Fades in only as a drag VoiceOver can't perform
+                    // anyway progresses — the real confirm path for a
+                    // VoiceOver user is the "Matches" button below, which
+                    // already speaks for itself.
+                    .accessibilityHidden(true)
             }
         }
         .overlay(alignment: .topLeading) {
@@ -132,11 +141,31 @@ struct VerifyView: View {
                 Pill(text: "SKIP", color: TL.fg2, icon: "arrow.uturn.right")
                     .opacity(min(max(-drag.width / 70, 0), 1))
                     .padding(16)
+                    .accessibilityHidden(true)
             }
         }
         .offset(offset)
         .rotationEffect(.degrees(Double(offset.width / 20)))
         .gesture(isTop ? dragGesture : nil)
+        // One combined stop instead of six-plus fragmented ones (name,
+        // brand, grade, three separate stat rows, progress) — a shopper
+        // glances at the whole card at once, so a VoiceOver user should
+        // hear it as one summary too, then act via the Skip/Matches
+        // buttons below rather than the drag gesture this can't perform.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(isTop ? accessibilityLabel(for: c) : "")
+        .accessibilityHidden(!isTop)
+    }
+
+    private func accessibilityLabel(for c: Candidate) -> String {
+        var parts = [c.productName]
+        if let brand = c.brand { parts.append("by \(brand)") }
+        if let letter = Nutriscore.letter(c.nutriscoreGrade) { parts.append("Nutri-Score \(letter.uppercased())") }
+        if let energy = c.energyKcal { parts.append("\(energy.compact) kilocalories per 100 grams") }
+        if let sugar = c.sugar { parts.append("\(sugar.compact) grams sugar per 100 grams") }
+        if let sodium = c.sodium { parts.append("\((sodium * 1000).compact) milligrams sodium per 100 grams") }
+        parts.append("verified \(c.verificationCount) of 3 times")
+        return parts.joined(separator: ", ")
     }
 
     private var dragGesture: some Gesture {
