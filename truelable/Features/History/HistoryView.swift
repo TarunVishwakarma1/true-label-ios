@@ -63,6 +63,7 @@ struct HistoryView: View {
                         } label: {
                             Image(systemName: filter == .all ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
                         }
+                        .accessibilityLabel("Filter")
                     }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button(compareMode ? "Done" : "Compare") {

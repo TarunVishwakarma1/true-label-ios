@@ -210,6 +210,27 @@ enum API {
         let _: Reply = try await post("api/v1/ocr/submit", submission)
     }
 
+    // MARK: Crash reporting
+
+    /// Unauthenticated on the backend on purpose: a crash can happen before
+    /// this install has a token. See `CrashReporter`.
+    struct CrashReportSubmission: Encodable {
+        var platform = "ios"
+        var title: String
+        var description: String?
+        var stackTrace: String?
+        var appVersion: String?
+        var osVersion: String?
+        var deviceModel: String?
+        var severity = "critical"
+        var deviceId: String?
+    }
+
+    static func submitCrashReport(_ submission: CrashReportSubmission) async throws {
+        struct Reply: Decodable {}
+        let _: Envelope<Reply> = try await post("api/v1/crash-reports", submission)
+    }
+
     // MARK: Plumbing
 
     private struct Envelope<T: Decodable>: Decodable {

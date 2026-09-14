@@ -75,6 +75,7 @@ struct ProductScreen: View {
                 ShareLink(item: product.shareSummary) {
                     Image(systemName: "square.and.arrow.up")
                 }
+                .accessibilityLabel("Share")
             }
             if inSheet { CloseButton() }
         }

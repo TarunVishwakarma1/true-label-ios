@@ -16,6 +16,7 @@ struct TrueLabelApp: App {
         // cache is the only reason a thumbnail is ever fetched twice.
         URLCache.shared = URLCache(memoryCapacity: 32 << 20, diskCapacity: 256 << 20)
         Self.styleNavigationBar()
+        CrashReporter.shared.start()
     }
 
     /// SwiftUI has no API for a navigation title's font, and leaving it as

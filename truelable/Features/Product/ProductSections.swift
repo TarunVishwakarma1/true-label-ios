@@ -391,6 +391,7 @@ struct AlternativesCard: View {
                                 .font(.title3)
                                 .foregroundStyle(TL.accent)
                         }
+                        .accessibilityLabel("Sort alternatives")
                     }
                 }
                 VStack(spacing: 0) {
