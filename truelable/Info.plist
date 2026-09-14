@@ -18,5 +18,23 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 	</dict>
+	<!-- The one consumer today is QuickScanWidgetExtension's widgetURL —
+	     tapping the Home Screen widget opens truelabel://scan, which
+	     TrueLabelApp's onOpenURL turns into the same
+	     router.scannerPresented = true the empty History state already
+	     uses. Not a general-purpose deep-link scheme yet, just this. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.tarun.truelable</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>truelabel</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

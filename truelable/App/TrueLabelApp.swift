@@ -62,8 +62,17 @@ struct TrueLabelApp: App {
                 .environment(router)
                 .preferredColorScheme(.dark)
                 .tint(TL.accent)
+                .onOpenURL(perform: handleOpenURL)
         }
         .modelContainer(Self.container)
+    }
+
+    /// The Home Screen widget's only trigger: `truelabel://scan` sets the
+    /// exact same flag the empty History state's "Scan your first product"
+    /// button already sets — one path into the scanner, not two.
+    private func handleOpenURL(_ url: URL) {
+        guard url.scheme == "truelabel", url.host == "scan" else { return }
+        router.scannerPresented = true
     }
 
     /// Own store file — this bundle ID shipped v1 with a different schema,

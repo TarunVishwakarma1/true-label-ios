@@ -6,7 +6,21 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		0D25D27FF7A13DA7C58F4A0E /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 313DAF57B5058F37A1FABBA2 /* Foundation.framework */; };
+		3CB5E2D2BC3322579D909EB2 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EEB9DEA84D3E55EBB43E072E /* SwiftUI.framework */; };
+		6682F93A3CBBB7B6D83490FF /* QuickScanWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C9C638A420912151EF22BC30 /* QuickScanWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CF03691CA33D9D4634E30988 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F3818A9BE50502D260B80CED /* WidgetKit.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		81CC53B1BE23FF80549EB420 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D4A1B06D3050791200FC5D00 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EC68DCA8C496501AFD043B20;
+			remoteInfo = QuickScanWidgetExtension;
+		};
 		D4A1B0833050791400FC5D00 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = D4A1B06D3050791200FC5D00 /* Project object */;
@@ -23,13 +37,38 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		B1365E0B6042724506653A9E /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				6682F93A3CBBB7B6D83490FF /* QuickScanWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		313DAF57B5058F37A1FABBA2 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		C9C638A420912151EF22BC30 /* QuickScanWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = QuickScanWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		D4A1B0753050791200FC5D00 /* truelable.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = truelable.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D4A1B0823050791400FC5D00 /* truelableTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = truelableTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D4A1B08C3050791400FC5D00 /* truelableUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = truelableUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EEB9DEA84D3E55EBB43E072E /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/SwiftUI.framework; sourceTree = DEVELOPER_DIR; };
+		F3818A9BE50502D260B80CED /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/WidgetKit.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		2E86915251108701A6B0FECB /* Exceptions for "QuickScanWidget" folder in "QuickScanWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = EC68DCA8C496501AFD043B20 /* QuickScanWidgetExtension */;
+		};
 		D4A1B0903050791400FC5D00 /* Exceptions for "truelable" folder in "truelable" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -40,6 +79,14 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		613833912F706503D8D0525E /* QuickScanWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				2E86915251108701A6B0FECB /* Exceptions for "QuickScanWidget" folder in "QuickScanWidgetExtension" target */,
+			);
+			path = QuickScanWidget;
+			sourceTree = "<group>";
+		};
 		D4A1B0773050791200FC5D00 /* truelable */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -50,17 +97,31 @@
 		};
 		D4A1B0853050791400FC5D00 /* truelableTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = truelableTests;
 			sourceTree = "<group>";
 		};
 		D4A1B08F3050791400FC5D00 /* truelableUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = truelableUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		C062EE92F0935ED01245D159 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0D25D27FF7A13DA7C58F4A0E /* Foundation.framework in Frameworks */,
+				CF03691CA33D9D4634E30988 /* WidgetKit.framework in Frameworks */,
+				3CB5E2D2BC3322579D909EB2 /* SwiftUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D4A1B0723050791200FC5D00 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -85,6 +146,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		AC6BCF6D9D6A1BAF515AE963 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				EE1797595E15F14BD6D7F0EF /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		D4A1B06C3050791200FC5D00 = {
 			isa = PBXGroup;
 			children = (
@@ -92,6 +161,8 @@
 				D4A1B0853050791400FC5D00 /* truelableTests */,
 				D4A1B08F3050791400FC5D00 /* truelableUITests */,
 				D4A1B0763050791200FC5D00 /* Products */,
+				AC6BCF6D9D6A1BAF515AE963 /* Frameworks */,
+				613833912F706503D8D0525E /* QuickScanWidget */,
 			);
 			sourceTree = "<group>";
 		};
@@ -101,8 +172,19 @@
 				D4A1B0753050791200FC5D00 /* truelable.app */,
 				D4A1B0823050791400FC5D00 /* truelableTests.xctest */,
 				D4A1B08C3050791400FC5D00 /* truelableUITests.xctest */,
+				C9C638A420912151EF22BC30 /* QuickScanWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		EE1797595E15F14BD6D7F0EF /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				313DAF57B5058F37A1FABBA2 /* Foundation.framework */,
+				F3818A9BE50502D260B80CED /* WidgetKit.framework */,
+				EEB9DEA84D3E55EBB43E072E /* SwiftUI.framework */,
+			);
+			name = iOS;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -115,17 +197,17 @@
 				D4A1B0713050791200FC5D00 /* Sources */,
 				D4A1B0723050791200FC5D00 /* Frameworks */,
 				D4A1B0733050791200FC5D00 /* Resources */,
+				B1365E0B6042724506653A9E /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				070735B31E1C2B58EBF6DC5F /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				D4A1B0773050791200FC5D00 /* truelable */,
 			);
 			name = truelable;
-			packageProductDependencies = (
-			);
 			productName = truelable;
 			productReference = D4A1B0753050791200FC5D00 /* truelable.app */;
 			productType = "com.apple.product-type.application";
@@ -147,8 +229,6 @@
 				D4A1B0853050791400FC5D00 /* truelableTests */,
 			);
 			name = truelableTests;
-			packageProductDependencies = (
-			);
 			productName = truelableTests;
 			productReference = D4A1B0823050791400FC5D00 /* truelableTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -170,11 +250,29 @@
 				D4A1B08F3050791400FC5D00 /* truelableUITests */,
 			);
 			name = truelableUITests;
-			packageProductDependencies = (
-			);
 			productName = truelableUITests;
 			productReference = D4A1B08C3050791400FC5D00 /* truelableUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		EC68DCA8C496501AFD043B20 /* QuickScanWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D4429C5872ABCCF492CE33C0 /* Build configuration list for PBXNativeTarget "QuickScanWidgetExtension" */;
+			buildPhases = (
+				E7528B5C27DC892BABCFB714 /* Sources */,
+				C062EE92F0935ED01245D159 /* Frameworks */,
+				89461A16792ED810E2227C12 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				613833912F706503D8D0525E /* QuickScanWidget */,
+			);
+			name = QuickScanWidgetExtension;
+			productName = QuickScanWidgetExtension;
+			productReference = C9C638A420912151EF22BC30 /* QuickScanWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -216,11 +314,19 @@
 				D4A1B0743050791200FC5D00 /* truelable */,
 				D4A1B0813050791400FC5D00 /* truelableTests */,
 				D4A1B08B3050791400FC5D00 /* truelableUITests */,
+				EC68DCA8C496501AFD043B20 /* QuickScanWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		89461A16792ED810E2227C12 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D4A1B0733050791200FC5D00 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -266,9 +372,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E7528B5C27DC892BABCFB714 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		070735B31E1C2B58EBF6DC5F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = QuickScanWidgetExtension;
+			target = EC68DCA8C496501AFD043B20 /* QuickScanWidgetExtension */;
+			targetProxy = 81CC53B1BE23FF80549EB420 /* PBXContainerItemProxy */;
+		};
 		D4A1B0843050791400FC5D00 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = D4A1B0743050791200FC5D00 /* truelable */;
@@ -282,6 +401,57 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		7202EBB88888F11A5DFDFC90 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 52Y25H7942;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = QuickScanWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tarun.truelable.QuickScanWidgetExtension;
+				PRODUCT_NAME = QuickScanWidgetExtension;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		CC0C0C98090457DBB494F011 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 52Y25H7942;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = QuickScanWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tarun.truelable.QuickScanWidgetExtension;
+				PRODUCT_NAME = QuickScanWidgetExtension;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		D4A1B0943050791400FC5D00 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -560,6 +730,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		D4429C5872ABCCF492CE33C0 /* Build configuration list for PBXNativeTarget "QuickScanWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CC0C0C98090457DBB494F011 /* Release */,
+				7202EBB88888F11A5DFDFC90 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		D4A1B0703050791200FC5D00 /* Build configuration list for PBXProject "truelable" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
