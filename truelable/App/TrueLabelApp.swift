@@ -17,6 +17,18 @@ struct TrueLabelApp: App {
         URLCache.shared = URLCache(memoryCapacity: 32 << 20, diskCapacity: 256 << 20)
         Self.styleNavigationBar()
         CrashReporter.shared.start()
+        Self.resetStateIfUITesting()
+    }
+
+    /// UserDefaults (and so @AppStorage) survives across `XCUIApplication
+    /// .launch()` calls within one simulator — a test that completes
+    /// onboarding leaves every later test starting already-onboarded, not
+    /// fresh-install. Real installs never pass this argument, so this is a
+    /// no-op outside a UI test run.
+    private static func resetStateIfUITesting() {
+        guard ProcessInfo.processInfo.arguments.contains("UITEST_RESET_STATE") else { return }
+        UserDefaults.standard.removeObject(forKey: Keys.onboarded)
+        UserDefaults.standard.removeObject(forKey: Keys.dietary)
     }
 
     /// SwiftUI has no API for a navigation title's font, and leaving it as

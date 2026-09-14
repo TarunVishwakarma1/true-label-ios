@@ -13,7 +13,7 @@ import Testing
 
 struct ChecksumTests {
     @Test func acceptsRealBarcodes() {
-        #expect(BarcodeChecksum.isValid("8901030895564"))   // EAN-13
+        #expect(BarcodeChecksum.isValid("8901030895562"))   // EAN-13
         #expect(BarcodeChecksum.isValid("036000291452"))    // UPC-A
         #expect(BarcodeChecksum.isValid("0036000291452"))   // same, EAN-13 form
         #expect(BarcodeChecksum.isValid("96385074"))        // EAN-8
