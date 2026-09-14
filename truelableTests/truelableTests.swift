@@ -230,3 +230,49 @@ struct AllergenCheckTests {
         #expect(PersonalCheck.run([.lowSugar], on: product).first?.status == .avoid)
     }
 }
+
+struct CrashReporterTests {
+    @Test func titlesFromExceptionTypeWhenPresent() {
+        let s = CrashReporter.submission(
+            exceptionType: 1, signal: 6, terminationReason: nil, stackTraceJSON: nil,
+            appBuildVersion: "12", osVersion: "26.5", deviceType: "iPhone17,1", deviceId: nil
+        )
+        // Exception type wins over signal when both are present — a
+        // signal accompanies most exception crashes too, and the
+        // exception type is the more specific fact.
+        #expect(s.title == "Exception type 1")
+    }
+
+    @Test func fallsBackToSignalWhenNoExceptionType() {
+        let s = CrashReporter.submission(
+            exceptionType: nil, signal: 11, terminationReason: nil, stackTraceJSON: nil,
+            appBuildVersion: "12", osVersion: "26.5", deviceType: "iPhone17,1", deviceId: nil
+        )
+        #expect(s.title == "Signal 11")
+    }
+
+    @Test func fallsBackToGenericCrashWhenNeitherIsPresent() {
+        let s = CrashReporter.submission(
+            exceptionType: nil, signal: nil, terminationReason: "abc", stackTraceJSON: nil,
+            appBuildVersion: "12", osVersion: "26.5", deviceType: "iPhone17,1", deviceId: nil
+        )
+        #expect(s.title == "Crash")
+    }
+
+    @Test func carriesEveryFieldThrough() {
+        let s = CrashReporter.submission(
+            exceptionType: nil, signal: 6, terminationReason: "NAMESPACE_SIGNAL, Namespace SIGNAL",
+            stackTraceJSON: "{\"callStacks\":[]}",
+            appBuildVersion: "42", osVersion: "26.5", deviceType: "iPhone17,1",
+            deviceId: "ABCD-1234"
+        )
+        #expect(s.platform == "ios")
+        #expect(s.severity == "critical")
+        #expect(s.description == "NAMESPACE_SIGNAL, Namespace SIGNAL")
+        #expect(s.stackTrace == "{\"callStacks\":[]}")
+        #expect(s.appVersion == "42")
+        #expect(s.osVersion == "26.5")
+        #expect(s.deviceModel == "iPhone17,1")
+        #expect(s.deviceId == "ABCD-1234")
+    }
+}

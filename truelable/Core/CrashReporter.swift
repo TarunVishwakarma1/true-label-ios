@@ -25,26 +25,52 @@ final class CrashReporter: NSObject, MXMetricManagerSubscriber {
 
     func didReceive(_ payloads: [MXDiagnosticPayload]) {
         for diagnostic in payloads.flatMap({ $0.crashDiagnostics ?? [] }) {
-            Task { try? await Self.submit(diagnostic) }
+            let meta = diagnostic.metaData
+            let submission = Self.submission(
+                exceptionType: diagnostic.exceptionType,
+                signal: diagnostic.signal,
+                terminationReason: diagnostic.terminationReason,
+                stackTraceJSON: String(data: diagnostic.callStackTree.jsonRepresentation(), encoding: .utf8),
+                appBuildVersion: meta.applicationBuildVersion,
+                osVersion: meta.osVersion,
+                deviceType: meta.deviceType,
+                deviceId: UIDevice.current.identifierForVendor?.uuidString
+            )
+            Task { try? await API.submitCrashReport(submission) }
         }
     }
 
-    private static func submit(_ diagnostic: MXCrashDiagnostic) async throws {
-        let meta = diagnostic.metaData
-        let stackTrace = String(data: diagnostic.callStackTree.jsonRepresentation(), encoding: .utf8)
+    /// The actual mapping logic, pulled out of `didReceive` so it's
+    /// testable without MetricKit's opaque, OS-only diagnostic types —
+    /// `MXCrashDiagnostic` has no public initializer, so a test can never
+    /// construct one to hand to this function directly.
+    static func submission(
+        exceptionType: NSNumber?,
+        signal: NSNumber?,
+        terminationReason: String?,
+        stackTraceJSON: String?,
+        appBuildVersion: String,
+        osVersion: String,
+        deviceType: String,
+        deviceId: String?
+    ) -> API.CrashReportSubmission {
+        let title: String
+        if let exceptionType {
+            title = "Exception type \(exceptionType)"
+        } else if let signal {
+            title = "Signal \(signal)"
+        } else {
+            title = "Crash"
+        }
 
-        var title = "Crash"
-        if let type = diagnostic.exceptionType { title = "Exception type \(type)" }
-        else if let signal = diagnostic.signal { title = "Signal \(signal)" }
-
-        try await API.submitCrashReport(.init(
+        return API.CrashReportSubmission(
             title: title,
-            description: diagnostic.terminationReason,
-            stackTrace: stackTrace,
-            appVersion: meta.applicationBuildVersion,
-            osVersion: meta.osVersion,
-            deviceModel: meta.deviceType,
-            deviceId: UIDevice.current.identifierForVendor?.uuidString
-        ))
+            description: terminationReason,
+            stackTrace: stackTraceJSON,
+            appVersion: appBuildVersion,
+            osVersion: osVersion,
+            deviceModel: deviceType,
+            deviceId: deviceId
+        )
     }
 }
