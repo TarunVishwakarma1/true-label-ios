@@ -17,6 +17,7 @@ struct ProductScreen: View {
 
     @AppStorage(Keys.dietary) private var dietaryRaw = ""
     @State private var comparePicker = false
+    @State private var lightboxShown = false
 
     init(product: Product, inSheet: Bool = false) {
         _product = State(initialValue: product)
@@ -80,6 +81,9 @@ struct ProductScreen: View {
         .sheet(isPresented: $comparePicker) {
             ComparePickerSheet(current: product)
         }
+        .fullScreenCover(isPresented: $lightboxShown) {
+            ImageLightboxView(urls: [product.imageURL].compactMap { $0 })
+        }
     }
 
     /// The product's own photo, blown up and blurred, bleeding from the
@@ -87,10 +91,8 @@ struct ProductScreen: View {
     @ViewBuilder
     private var imageBleed: some View {
         if let url = product.imageURL {
-            AsyncImage(url: url) { phase in
-                if let image = phase.image {
-                    image.resizable().scaledToFill()
-                }
+            CachedAsyncImage(url: url) { image in
+                image?.resizable().scaledToFill()
             }
             .frame(height: 280)
             .frame(maxWidth: .infinity)
@@ -108,8 +110,14 @@ struct ProductScreen: View {
     private var hero: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 16) {
-                ProductThumb(url: product.imageURL, size: 104, radius: 26)
-                    .shadow(color: .black.opacity(0.4), radius: 18, y: 10)
+                Button {
+                    if product.imageURL != nil { lightboxShown = true }
+                } label: {
+                    ProductThumb(url: product.imageURL, size: 104, radius: 26)
+                        .shadow(color: .black.opacity(0.4), radius: 18, y: 10)
+                }
+                .buttonStyle(.plain)
+                .disabled(product.imageURL == nil)
                 VStack(alignment: .leading, spacing: 8) {
                     if let brand = product.brand { Eyebrow(text: brand) }
                     Text(product.name)

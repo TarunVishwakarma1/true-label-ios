@@ -278,6 +278,7 @@ private struct GlassCard: ViewModifier {
             .engraved()
             .padding(level.padding)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .clipShape(shape)
 
         if reduceTransparency {
             inner

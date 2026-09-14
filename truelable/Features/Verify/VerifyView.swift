@@ -99,7 +99,7 @@ struct VerifyView: View {
                 ProductThumb(url: c.imageURL, size: 56, radius: 16)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(c.productName).font(.displayS).lineLimit(2)
-                    if let brand = c.brand { Text(brand).font(.footnote).foregroundStyle(TL.fg2) }
+                    if let brand = c.brand { Text(brand).font(.footnote).foregroundStyle(TL.fg2).lineLimit(1) }
                 }
                 Spacer(minLength: 0)
                 GradeBadge(grade: c.nutriscoreGrade)
@@ -136,11 +136,14 @@ struct VerifyView: View {
         }
         .offset(offset)
         .rotationEffect(.degrees(Double(offset.width / 20)))
-        .animation(.tl(0.3), value: drag)
         .gesture(isTop ? dragGesture : nil)
     }
 
     private var dragGesture: some Gesture {
+        // No implicit `.animation(value:)` on the card while this tracks —
+        // that would wrap every `onChanged` tick in its own animation and
+        // the queue falls behind the finger, reading as the card
+        // "refusing" to swipe. Only the snap-back on release is animated.
         DragGesture()
             .onChanged { drag = $0.translation }
             .onEnded { value in
@@ -149,7 +152,7 @@ struct VerifyView: View {
                 } else if value.translation.width < -90 {
                     advance()
                 } else {
-                    drag = .zero
+                    withAnimation(.tl(0.3)) { drag = .zero }
                 }
             }
     }

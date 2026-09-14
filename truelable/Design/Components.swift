@@ -244,8 +244,8 @@ struct ProductThumb: View {
     var radius: CGFloat = 16
 
     var body: some View {
-        AsyncImage(url: url, transaction: Transaction(animation: .tl(0.4))) { phase in
-            if let image = phase.image {
+        CachedAsyncImage(url: url) { image in
+            if let image {
                 image.resizable().scaledToFill()
                     .transition(.opacity)
             } else {
@@ -265,6 +265,71 @@ struct ProductThumb: View {
                 .font(.system(size: size * 0.36, weight: .medium))
                 .foregroundStyle(TL.fg3)
         }
+    }
+}
+
+/// Drop-in `AsyncImage` replacement backed by `ImageCache`. Product photos
+/// come from Open Food Facts, which sends no `Cache-Control` — without this,
+/// `URLCache` never persists the response no matter how large its capacity
+/// is, and the same image refetches from scratch every time its view
+/// reappears (tab switch, back button, a row scrolled off then on again).
+struct CachedAsyncImage<Content: View>: View {
+    let url: URL?
+    @ViewBuilder var content: (Image?) -> Content
+    @State private var image: Image?
+
+    var body: some View {
+        content(image)
+            .animation(.tl(0.4), value: image)
+            .task(id: url) {
+                guard let url else { image = nil; return }
+                if let uiImage = await ImageCache.shared.image(for: url) {
+                    image = Image(uiImage: uiImage)
+                } else {
+                    image = nil
+                }
+            }
+    }
+}
+
+actor ImageCache {
+    static let shared = ImageCache()
+
+    private let memory = NSCache<NSURL, UIImage>()
+    private var inFlight: [URL: Task<UIImage?, Never>] = [:]
+    private let session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.urlCache = URLCache.shared
+        // Fail fast rather than leave a thumbnail spinning for 20-30s when
+        // Open Food Facts' CDN stalls — the placeholder is a fine outcome,
+        // an indefinitely hung request is not.
+        config.timeoutIntervalForRequest = 8
+        return URLSession(configuration: config)
+    }()
+
+    func image(for url: URL) async -> UIImage? {
+        if let cached = memory.object(forKey: url as NSURL) { return cached }
+        if let task = inFlight[url] { return await task.value }
+
+        let request = URLRequest(url: url)
+        let task = Task<UIImage?, Never> { [session] in
+            if let cachedResponse = URLCache.shared.cachedResponse(for: request),
+               let image = UIImage(data: cachedResponse.data) {
+                return image
+            }
+            guard let (data, response) = try? await session.data(for: request),
+                  let image = UIImage(data: data) else { return nil }
+            URLCache.shared.storeCachedResponse(
+                CachedURLResponse(response: response, data: data, storagePolicy: .allowed),
+                for: request
+            )
+            return image
+        }
+        inFlight[url] = task
+        let image = await task.value
+        inFlight[url] = nil
+        if let image { memory.setObject(image, forKey: url as NSURL) }
+        return image
     }
 }
 
