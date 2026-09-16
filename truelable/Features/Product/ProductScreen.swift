@@ -137,8 +137,9 @@ struct ProductScreen: View {
                 } else {
                     Pill(text: "Open Food Facts", color: TL.fg2, icon: "globe")
                 }
-                if let grade = product.nutriscoreGrade {
-                    Pill(text: "Nutri-Score \(grade.uppercased())", color: TL.grade(grade))
+                if let grade = product.effectiveNutriscoreGrade {
+                    let label = product.isNutriscoreCalculated ? "TrueLabel \(grade.uppercased())" : "Nutri-Score \(grade.uppercased())"
+                    Pill(text: label, color: TL.grade(grade))
                 }
                 if let nova = product.novaGroup {
                     Pill(text: "NOVA \(nova)", color: TL.nova(nova))
