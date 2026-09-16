@@ -71,13 +71,18 @@ final class ScanRecord {
 
     /// Insert-or-update by barcode. `bump` moves it to the top of history
     /// (a real new look-up); `false` just refreshes the snapshot.
+    /// `createIfMissing` is the other half of that same distinction: merely
+    /// viewing a product (search, trending, an alternative) should never
+    /// plant a brand-new row — only an actual scan or manual barcode entry
+    /// should. A product already being tracked still gets its snapshot
+    /// quietly refreshed either way.
     @MainActor
-    static func record(_ product: Product, in context: ModelContext, bump: Bool = true) {
+    static func record(_ product: Product, in context: ModelContext, bump: Bool = true, createIfMissing: Bool = true) {
         let barcode = product.barcode
         let existing = try? context.fetch(FetchDescriptor<ScanRecord>(predicate: #Predicate { $0.barcode == barcode })).first
         if let existing {
             existing.refresh(with: product, bump: bump)
-        } else {
+        } else if createIfMissing {
             context.insert(ScanRecord(product: product))
         }
     }

@@ -15,6 +15,12 @@ struct ProductLoaderScreen: View {
     let barcode: String
     var initial: Product? = nil
     var inSheet: Bool = false
+    /// True only from an actual scan or manual barcode entry — the two
+    /// places the user genuinely looked something up. Every other entry
+    /// point (history, recents, trending, search, an alternative) is just
+    /// viewing, and defaults to false so it can never plant a new history
+    /// row or bump an existing one's position just by being opened.
+    var addsHistory: Bool = false
 
     @Environment(\.modelContext) private var context
 
@@ -51,7 +57,7 @@ struct ProductLoaderScreen: View {
         do {
             let product = try await API.product(barcode: barcode)
             withAnimation(.tl(0.4)) { state = .loaded(product) }
-            ScanRecord.record(product, in: context, bump: initial == nil)
+            ScanRecord.record(product, in: context, bump: addsHistory, createIfMissing: addsHistory)
         } catch APIError.notFound {
             if initial == nil { withAnimation(.tl(0.4)) { state = .notFound } }
         } catch {

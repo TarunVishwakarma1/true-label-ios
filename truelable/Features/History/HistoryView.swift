@@ -203,9 +203,9 @@ struct HistoryView: View {
                 systemImage: "clock",
                 description: Text("Products you look up will show here — and open instantly, even offline.")
             )
-            Button("Scan your first product") { router.scannerPresented = true }
-                .buttonStyle(.primary)
-                .padding(.horizontal, 40)
+            // Button("Scan your first product") { router.scannerPresented = true }
+            //     .buttonStyle(.primary)
+            //     .padding(.horizontal, 40)
         }
     }
 

@@ -144,6 +144,15 @@ struct VerifyView: View {
                     .accessibilityHidden(true)
             }
         }
+        // Liquid Glass is a live system-compositor effect, not a plain
+        // SwiftUI layer — transforming it directly while dragging is what
+        // was causing the glass background to visibly grow/bleed apart
+        // from the (correctly-sized) content, and the resulting geometry
+        // mismatch is also what made swipes intermittently fail to
+        // register. Flattening to a single bitmap first means offset/
+        // rotation apply to a fixed image instead of fighting the glass
+        // compositor's own live rendering.
+        .compositingGroup()
         .offset(offset)
         .rotationEffect(.degrees(Double(offset.width / 20)))
         .gesture(isTop ? dragGesture : nil)

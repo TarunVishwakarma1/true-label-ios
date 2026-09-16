@@ -71,7 +71,7 @@ struct ScanScreen: View {
             switch item {
             case .product(let barcode):
                 NavigationStack {
-                    ProductLoaderScreen(barcode: barcode, inSheet: true)
+                    ProductLoaderScreen(barcode: barcode, inSheet: true, addsHistory: true)
                         .navigationDestination(for: String.self) { ProductLoaderScreen(barcode: $0) }
                 }
                 .presentationDetents([.large])
@@ -398,7 +398,7 @@ struct ManualEntrySheet: View {
                     Button("Close", systemImage: "xmark") { dismiss() }
                 }
             }
-            .navigationDestination(for: String.self) { ProductLoaderScreen(barcode: $0) }
+            .navigationDestination(for: String.self) { ProductLoaderScreen(barcode: $0, addsHistory: true) }
             .onAppear { focused = true }
         }
         .presentationDetents([.medium, .large])
