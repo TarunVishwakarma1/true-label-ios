@@ -13,6 +13,7 @@ import Charts
 struct ProfileView: View {
     @Query private var records: [ScanRecord]
     @Environment(\.modelContext) private var context
+    @Environment(AppRouter.self) private var router
     @AppStorage(Keys.verifiedCount) private var verifiedCount = 0
     @AppStorage(Keys.dietary) private var dietaryRaw = ""
     @State private var confirmClear = false
@@ -28,14 +29,21 @@ struct ProfileView: View {
             ScrollView {
                 GlassEffectContainer(spacing: 24) {
                     VStack(spacing: 24) {
+                        // Above the fold gets the staged entrance; below it,
+                        // settling on scroll takes over. Doing both to the
+                        // same card just fights itself.
                         AccountCard().appear(0)
                         impact.appear(1)
-                        if !records.isEmpty { whatYouScan }
-                        if !records.isEmpty { trends }
-                        plusCard
-                        watchFor
-                        about
-                        data
+                        if records.isEmpty {
+                            scanPrompt.appear(2)
+                        } else {
+                            whatYouScan.settleOnScroll()
+                            trends.settleOnScroll()
+                        }
+                        plusCard.settleOnScroll()
+                        watchFor.settleOnScroll()
+                        about.settleOnScroll()
+                        data.settleOnScroll()
                     }
                 }
                 .padding(.horizontal, TL.gutter)
@@ -105,7 +113,7 @@ struct ProfileView: View {
             }
             .chartYAxis(.hidden)
             .frame(height: 96)
-            .animation(.tl(0.4), value: trendWindow)
+            .animation(.tlSettle, value: trendWindow)
 
             if let sugar = average(\.sugarGrams) {
                 gauge("Avg. sugar per product", sugar, of: 50, unit: "g", color: TL.warn)
@@ -186,6 +194,22 @@ struct ProfileView: View {
                     .foregroundStyle(TL.fg2)
             }
         }
+    }
+
+    /// With no history there is no distribution and no trend, which used to
+    /// leave a gap between "your part in it" and the Plus card. Say what
+    /// would be here instead of showing nothing.
+    private var scanPrompt: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(title: "Your trends")
+            Text("Once you've scanned a few products this fills in — what you buy by grade, and how your sugar and sodium track against the daily guidelines.")
+                .font(.footnote)
+                .foregroundStyle(TL.fg2)
+            Button("Scan something") { router.scannerPresented = true }
+                .buttonStyle(.secondary)
+                .padding(.top, 2)
+        }
+        .card()
     }
 
     // MARK: What you scan
@@ -327,6 +351,7 @@ struct ProfileView: View {
 
 #Preview {
     ProfileView()
+        .environment(AppRouter())
         .modelContainer(for: ScanRecord.self, inMemory: true)
         .preferredColorScheme(.dark)
 }

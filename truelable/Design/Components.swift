@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 // MARK: - Buttons
 
@@ -459,6 +460,52 @@ struct Backdrop: View {
         .ignoresSafeArea()
         .allowsHitTesting(false)
     }
+}
+
+/// Film grain over the mesh. A perfectly smooth gradient reads as a render;
+/// the same gradient with a little tooth reads as a surface — and this app's
+/// whole identity is a printed paper label, so the ground should have some
+/// of the paper in it.
+///
+/// The tile is generated once and reused. It is deliberately tiny and tiled
+/// rather than a full-screen texture, and it never scrolls: it sits in the
+/// background layer behind content, not on top of it.
+struct Grain: View {
+    var opacity: Double = 0.055
+
+    var body: some View {
+        Image(uiImage: Self.tile)
+            .resizable(resizingMode: .tile)
+            .blendMode(.overlay)
+            .opacity(opacity)
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+    }
+
+    /// Written as a raw pixel buffer rather than thousands of one-pixel
+    /// fills — same tile, without spending the first frame drawing it.
+    private static let tile: UIImage = {
+        let side = 96
+        var bytes = [UInt8](repeating: 255, count: side * side * 4)
+        for i in stride(from: 0, to: bytes.count, by: 4) {
+            // A narrow band around mid-grey. Wider than this and the grain
+            // stops reading as texture and starts reading as static.
+            let v = UInt8.random(in: 97...158)
+            bytes[i] = v
+            bytes[i + 1] = v
+            bytes[i + 2] = v
+        }
+        let cg = bytes.withUnsafeMutableBytes { raw -> CGImage? in
+            CGContext(
+                data: raw.baseAddress,
+                width: side, height: side,
+                bitsPerComponent: 8, bytesPerRow: side * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )?.makeImage()
+        }
+        return cg.map(UIImage.init(cgImage:)) ?? UIImage()
+    }()
 }
 
 

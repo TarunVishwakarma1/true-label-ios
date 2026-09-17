@@ -81,5 +81,6 @@ struct QuickScanWidget: Widget {
 struct QuickScanWidgetBundle: WidgetBundle {
     var body: some Widget {
         QuickScanWidget()
+        ScanLiveActivity()
     }
 }

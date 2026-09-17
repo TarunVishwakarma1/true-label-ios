@@ -5,6 +5,10 @@
 //  Everything this device has looked up, searchable, with a compare mode
 //  for 2–4 products. Rows open instantly from the stored snapshot.
 //
+//  The filter used to hide inside a toolbar menu, which meant the only
+//  indication the list was filtered was a slightly different icon. It is a
+//  chip rail now: the state of the list is visible from the list itself.
+//
 
 import SwiftUI
 import SwiftData
@@ -19,12 +23,31 @@ struct HistoryView: View {
     @State private var compareMode = false
     @State private var selected: Set<String> = []
     @State private var comparing: [ScanRecord] = []
+    @Namespace private var hero
     private let plus = Plus.shared
     private var compareLimit: Int { plus.isActive ? 4 : Plus.freeCompareLimit }
 
     private enum Filter: String, CaseIterable, Identifiable {
         case all = "All", verified = "Verified", good = "Nutri-Score A–B", poor = "Nutri-Score D–E"
         var id: String { rawValue }
+
+        var short: String {
+            switch self {
+            case .all: "All"
+            case .verified: "Verified"
+            case .good: "A–B"
+            case .poor: "D–E"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .all: "square.grid.2x2"
+            case .verified: "checkmark.seal.fill"
+            case .good: "leaf.fill"
+            case .poor: "exclamationmark.triangle.fill"
+            }
+        }
     }
 
     private var visible: [ScanRecord] {
@@ -52,22 +75,13 @@ struct HistoryView: View {
             .navigationTitle("History")
             .navigationDestination(for: String.self) { barcode in
                 ProductLoaderScreen(barcode: barcode, initial: records.first { $0.barcode == barcode }?.product)
+                    .zoomDestination(barcode, in: hero)
             }
             .toolbar {
                 if !records.isEmpty {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Menu {
-                            Picker("Filter", selection: $filter) {
-                                ForEach(Filter.allCases) { Text($0.rawValue).tag($0) }
-                            }
-                        } label: {
-                            Image(systemName: filter == .all ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
-                        }
-                        .accessibilityLabel("Filter")
-                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button(compareMode ? "Done" : "Compare") {
-                            withAnimation(.tl(0.3)) {
+                            withAnimation(.tlSettle) {
                                 compareMode.toggle()
                                 if !compareMode { selected.removeAll() }
                             }
@@ -85,6 +99,8 @@ struct HistoryView: View {
             .sheet(isPresented: Binding(get: { !comparing.isEmpty }, set: { if !$0 { comparing = [] } })) {
                 CompareView(records: comparing)
             }
+            .sensoryFeedback(.selection, trigger: filter)
+            .sensoryFeedback(.selection, trigger: selected)
         }
     }
 
@@ -102,12 +118,57 @@ struct HistoryView: View {
         return buckets.filter { !$0.1.isEmpty }
     }
 
+    private var filterRail: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: 8) {
+                ForEach(Filter.allCases) { option in
+                    let on = filter == option
+                    Button {
+                        withAnimation(.tlSnap) { filter = option }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: option.icon)
+                                .font(.caption2.weight(.semibold))
+                            Text(option.short)
+                                .font(.footnote.weight(.semibold))
+                        }
+                        .foregroundStyle(on ? TL.ink : TL.fg2)
+                        .padding(.horizontal, 12)
+                        .frame(height: 34)
+                        .background {
+                            if on {
+                                Capsule().fill(TL.accentGradient)
+                            } else {
+                                Capsule().fill(TL.surface).overlay(Capsule().stroke(TL.line))
+                            }
+                        }
+                    }
+                    .buttonStyle(.pressable)
+                }
+            }
+            .padding(.horizontal, TL.gutter)
+            .padding(.vertical, 2)
+        }
+        .scrollIndicators(.hidden)
+    }
+
     private var list: some View {
         List {
-            if visible.isEmpty {
-                ContentUnavailableView.search(text: query)
-                    .listRowBackground(Color.clear)
+            Section {
+                EmptyView()
+            } header: {
+                filterRail
+                    .listRowInsets(EdgeInsets())
+                    .textCase(nil)
             }
+            .listRowBackground(Color.clear)
+
+            if visible.isEmpty {
+                noMatches
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+            }
+
             ForEach(grouped, id: \.title) { group in
                 Section {
                     ForEach(group.records) { record in
@@ -117,7 +178,7 @@ struct HistoryView: View {
                             .swipeActions(edge: .trailing) {
                                 if !compareMode {
                                     Button(role: .destructive) {
-                                        context.delete(record)
+                                        withAnimation(.tlSettle) { context.delete(record) }
                                     } label: { Label("Delete", systemImage: "trash") }
                                 }
                             }
@@ -139,41 +200,51 @@ struct HistoryView: View {
                 .buttonStyle(.plain)
         } else {
             NavigationLink(value: record.barcode) { rowBody(record) }
+                .zoomSource(record.barcode, in: hero)
         }
     }
 
     private func rowBody(_ record: ScanRecord) -> some View {
-        HStack(spacing: 16) {
+        let picked = selected.contains(record.barcode)
+        return HStack(spacing: 14) {
             if compareMode {
-                Image(systemName: selected.contains(record.barcode) ? "checkmark.circle.fill" : "circle")
+                Image(systemName: picked ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
-                    .foregroundStyle(selected.contains(record.barcode) ? TL.accent : TL.fg3)
+                    .foregroundStyle(picked ? TL.accent : TL.fg3)
+                    .contentTransition(.symbolEffect(.replace))
             }
             ProductThumb(url: record.imageURL, size: 56, radius: 16)
             VStack(alignment: .leading, spacing: 4) {
                 Text(record.name)
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     if !record.brand.isEmpty {
                         Text(record.brand).lineLimit(1)
+                        Text("·")
                     }
-                    Text("·")
                     Text(record.scannedAt.formatted(.relative(presentation: .named)))
+                        .lineLimit(1)
                 }
                 .font(.caption)
                 .foregroundStyle(TL.fg3)
             }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 4) {
+            Spacer(minLength: 8)
+            VStack(alignment: .trailing, spacing: 5) {
                 GradeBadge(grade: record.nutriscoreGrade)
                 if record.verified {
-                    Image(systemName: "checkmark.seal.fill").font(.caption).foregroundStyle(TL.accent)
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.caption2)
+                        .foregroundStyle(TL.accent)
+                        .accessibilityLabel("Verified by the community")
                 }
             }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 8)
         .contentShape(Rectangle())
+        // Picking for compare should feel like picking something up.
+        .scaleEffect(compareMode && picked ? 0.985 : 1)
+        .animation(.tlSnap, value: picked)
     }
 
     private var compareBar: some View {
@@ -185,32 +256,71 @@ struct HistoryView: View {
                 comparing = records.filter { selected.contains($0.barcode) }
             } label: {
                 Text(selected.count < 2 ? "Pick 2–\(compareLimit) products" : "Compare \(selected.count) products")
+                    .contentTransition(.numericText())
             }
             .buttonStyle(.primary)
             .disabled(selected.count < 2)
             .opacity(selected.count < 2 ? 0.6 : 1)
         }
         .padding(.horizontal, TL.gutter)
-        .padding(.vertical, 12)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
         .background(.regularMaterial)
-        .animation(.tl(0.3), value: selected.count)
+        .animation(.tlSettle, value: selected.count)
+    }
+
+    /// Filtered down to nothing is a different situation from having scanned
+    /// nothing, and it needs the filter back — not a shrug.
+    private var noMatches: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "line.3.horizontal.decrease.circle")
+                .font(.largeTitle)
+                .foregroundStyle(TL.fg3)
+            Text(query.isEmpty ? "Nothing matches this filter" : "No match for “\(query)”")
+                .font(.subheadline.weight(.semibold))
+                .multilineTextAlignment(.center)
+            if filter != .all {
+                Button("Show all") { withAnimation(.tlSnap) { filter = .all } }
+                    .buttonStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
     }
 
     private var empty: some View {
-        VStack(spacing: 20) {
-            ContentUnavailableView(
-                "Nothing scanned yet",
-                systemImage: "clock",
-                description: Text("Products you look up will show here — and open instantly, even offline.")
-            )
-            // Button("Scan your first product") { router.scannerPresented = true }
-            //     .buttonStyle(.primary)
-            //     .padding(.horizontal, 40)
+        VStack(spacing: 22) {
+            ZStack {
+                Circle()
+                    .fill(TL.surface)
+                    .frame(width: 96, height: 96)
+                    .overlay(Circle().stroke(TL.line))
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 36, weight: .light))
+                    .foregroundStyle(TL.fg3)
+            }
+
+            VStack(spacing: 8) {
+                Text("Nothing scanned yet")
+                    .font(.displayM)
+                Text("Products you look up land here — and open instantly, even offline.")
+                    .font(.subheadline)
+                    .foregroundStyle(TL.fg2)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 32)
+
+            Button("Scan your first product") { router.scannerPresented = true }
+                .buttonStyle(.primary)
+                .padding(.horizontal, 40)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .appear()
     }
 
     private func toggle(_ barcode: String) {
-        withAnimation(.tl(0.25)) {
+        withAnimation(.tlSnap) {
             if selected.contains(barcode) { selected.remove(barcode) } else if selected.count < compareLimit { selected.insert(barcode) }
         }
     }

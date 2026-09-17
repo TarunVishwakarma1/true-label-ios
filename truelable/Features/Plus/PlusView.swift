@@ -34,6 +34,7 @@ struct PlusView: View {
         }
         .presentationBackground(TL.bg)
         .presentationCornerRadius(32)
+        .sensoryFeedback(.success, trigger: plus.isActive)
     }
 
     /// Nothing is for sale yet, so the paywall is a switch. Same marketing,
@@ -92,15 +93,21 @@ struct PlusView: View {
             Text("Everything you use\ntoday stays free.")
                 .font(.displayL)
                 .tracking(-0.6)
+                .appear(0)
             Text("Scanning, results, verifying, adding products — none of it is behind Plus, and it won't be. Plus is the extra layer for people who want to go deeper.")
                 .font(.subheadline)
                 .foregroundStyle(TL.fg2)
+                .appear(1)
 
             VStack(spacing: 12) {
                 perk("chart.line.uptrend.xyaxis", "Trends over months", "Where sugar and sodium actually come from in what you buy, over 30 and 90 days.")
+                    .appear(2)
                 perk("arrow.left.arrow.right", "Compare up to four", "Line up a whole shelf side by side, not just two.")
+                    .appear(3)
                 perk("sparkles", "Ranked swaps", "Sort same-shelf alternatives by any nutrient, and see the full list.")
+                    .appear(4)
                 perk("heart", "Keeps the lights on", "Servers, Open Food Facts contributions, no ads, no data sold.")
+                    .appear(5)
             }
         }
         .padding(.horizontal, 24)
@@ -129,8 +136,12 @@ struct PlusView: View {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 64))
                 .foregroundStyle(TL.plusGradient)
+                // The one moment in the app that has earned a flourish.
+                .symbolEffect(.bounce, options: .nonRepeating, value: plus.isActive)
+                .appear(0)
             Text("You're on Plus")
                 .font(.displayL)
+                .appear(1)
             Text(plus.isComplimentary
                  ? "Trends, four-way compare and ranked swaps are on, free while we build it."
                  : "Trends, four-way compare and ranked swaps are all on. Thank you for keeping this independent.")

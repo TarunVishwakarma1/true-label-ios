@@ -28,6 +28,7 @@ struct CompareView: View {
                     nova
                 }
                 .padding(TL.gutter)
+                .appear()
             }
             .scrollBounceBehavior(.basedOnSize)
             .screenBackground()
@@ -113,12 +114,24 @@ struct CompareView: View {
     }
 
     private func cell(_ text: String, highlighted: Bool) -> some View {
-        Text(text)
-            .font(.subheadline.weight(highlighted ? .bold : .regular))
-            .numeric()
-            .foregroundStyle(highlighted ? TL.good : TL.fg)
-            .frame(width: columnWidth, alignment: .leading)
-            .padding(.vertical, 12)
-            .overlay(alignment: .top) { Hairline() }
+        HStack(spacing: 5) {
+            Text(text)
+                .font(.subheadline.weight(highlighted ? .bold : .regular))
+                .numeric()
+                .foregroundStyle(highlighted ? TL.good : TL.fg)
+            // Colour alone can't carry "this is the better one" — it fails
+            // for anyone who can't separate the green, and it fails in a
+            // screenshot. The mark says it outright.
+            if highlighted {
+                Image(systemName: "checkmark")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(TL.good)
+            }
+        }
+        .frame(width: columnWidth, alignment: .leading)
+        .padding(.vertical, 12)
+        .overlay(alignment: .top) { Hairline() }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(highlighted ? "\(text), best of these" : text)
     }
 }

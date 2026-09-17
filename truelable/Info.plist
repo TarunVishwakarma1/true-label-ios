@@ -36,5 +36,11 @@
 			</array>
 		</dict>
 	</array>
+	<!-- Live Activities. This is an Info.plist key, not an entitlement, so
+	     unlike Sign in with Apple it needs no paid Developer Program team.
+	     The activity this app starts is updated locally by the app itself;
+	     only push-updated activities need an APNs key, and none of these do. -->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 </dict>
 </plist>

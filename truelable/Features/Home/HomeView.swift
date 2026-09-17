@@ -6,6 +6,12 @@
 //  to drag. Trends live under You, popular products live in Search — both
 //  were duplicated here and both are what made this page overflow.
 //
+//  What changed in the redesign: the page used to arrive all at once, with
+//  only the header and headline animating and everything below simply being
+//  there. Now it assembles, the rail snaps, tapping a product grows it out
+//  of the card that was tapped, and the counts roll when they change. None
+//  of that is decoration — each one answers "what just happened?".
+//
 
 import SwiftUI
 import SwiftData
@@ -17,6 +23,8 @@ struct HomeView: View {
     @AppStorage(Keys.dietary) private var dietaryRaw = ""
     @State private var queueCount = 0
     @State private var trending: [ProductCard] = []
+    @State private var loadingTrending = true
+    @Namespace private var hero
     private let plus = Plus.shared
 
     var body: some View {
@@ -25,12 +33,12 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     header.appear(0)
                     headline.appear(1)
-                    searchBar
-                    stats
-                    if !records.isEmpty { recents }
-                    if !trending.isEmpty { popular }
-                    if !plus.isActive { PlusBanner() }
-                    nudge
+                    searchBar.appear(2)
+                    stats.appear(3)
+                    if !records.isEmpty { recents.appear(4).settleOnScroll() }
+                    popular.appear(5).settleOnScroll()
+                    if !plus.isActive { PlusBanner().appear(6).settleOnScroll() }
+                    nudge.settleOnScroll()
                 }
                 .padding(.horizontal, TL.gutter)
                 .padding(.top, 8)
@@ -42,13 +50,17 @@ struct HomeView: View {
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: String.self) { barcode in
                 ProductLoaderScreen(barcode: barcode, initial: records.first { $0.barcode == barcode }?.product)
+                    .zoomDestination(barcode, in: hero)
             }
             .task {
                 async let queue = API.needsVerification(limit: 12)
                 async let popular = API.trending(limit: 6)
                 queueCount = (try? await queue.count) ?? 0
                 let found = (try? await popular) ?? []
-                withAnimation(.tl(0.4)) { trending = found }
+                withAnimation(.tlSettle) {
+                    trending = found
+                    loadingTrending = false
+                }
             }
         }
     }
@@ -122,14 +134,46 @@ struct HomeView: View {
             .buttonStyle(.pressable)
             .accessibilityLabel("Type a barcode")
         }
+        .sensoryFeedback(.selection, trigger: router.sheet)
     }
 
+    /// Was three separate tiles, which read as three unrelated widgets
+    /// competing for the same row. One surface divided by hairlines reads as
+    /// one fact about the user, which is what it is.
     private var stats: some View {
-        HStack(spacing: 12) {
-            StatTile(value: "\(records.count)", label: "Products", icon: "barcode")
-            StatTile(value: "\(thisWeek)", label: "This week", icon: "calendar", tint: TL.info)
-            StatTile(value: "\(verifiedCount)", label: "Confirmed", icon: "checkmark.seal.fill", tint: TL.warn)
+        HStack(spacing: 0) {
+            stat("\(records.count)", "Products")
+            statDivider
+            stat("\(thisWeek)", "This week")
+            statDivider
+            stat("\(verifiedCount)", "Confirmed")
         }
+        .card(.flat)
+        .animation(.tlSettle, value: records.count)
+        .animation(.tlSettle, value: verifiedCount)
+    }
+
+    private func stat(_ value: String, _ label: String) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.displayS)
+                .numeric()
+                // The count rolling is the only signal that a scan landed
+                // while this screen was already open.
+                .contentTransition(.numericText())
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(TL.fg3)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(value) \(label)")
+    }
+
+    private var statDivider: some View {
+        Rectangle()
+            .fill(TL.line)
+            .frame(width: 1, height: 28)
     }
 
     private var thisWeek: Int {
@@ -149,32 +193,73 @@ struct HomeView: View {
                     ForEach(records.prefix(10)) { record in
                         NavigationLink(value: record.barcode) { RecentCard(record: record) }
                             .buttonStyle(.pressable)
+                            .zoomSource(record.barcode, in: hero)
                     }
                 }
+                .scrollTargetLayout()
             }
             .scrollIndicators(.hidden)
+            // Cards line up under the finger instead of drifting to a stop
+            // mid-card, which is the difference between a rail and a row
+            // that happens to scroll.
+            .scrollTargetBehavior(.viewAligned)
         }
     }
 
+    @ViewBuilder
     private var popular: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
+        if loadingTrending {
+            VStack(alignment: .leading, spacing: 12) {
                 SectionHeader(title: "Popular in \(API.country)")
-                Button("Search") { router.sheet = .search }
-                    .font(.footnote.weight(.semibold))
-            }
-            VStack(spacing: 0) {
-                ForEach(Array(trending.prefix(4).enumerated()), id: \.element.id) { index, card in
-                    if index > 0 { Hairline() }
-                    NavigationLink(value: card.barcode) {
-                        ProductCardRow(card: card)
-                            .padding(.vertical, 10)
+                VStack(spacing: 0) {
+                    ForEach(0..<3, id: \.self) { index in
+                        if index > 0 { Hairline() }
+                        placeholderRow
                     }
-                    .buttonStyle(.pressable)
                 }
+                .card()
+                .loadingPulse()
+            }
+        } else if !trending.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    SectionHeader(title: "Popular in \(API.country)")
+                    Button("Search") { router.sheet = .search }
+                        .font(.footnote.weight(.semibold))
+                }
+                VStack(spacing: 0) {
+                    ForEach(Array(trending.prefix(4).enumerated()), id: \.element.id) { index, card in
+                        if index > 0 { Hairline() }
+                        NavigationLink(value: card.barcode) {
+                            ProductCardRow(card: card)
+                                .padding(.vertical, 10)
+                        }
+                        .buttonStyle(.pressable)
+                        .zoomSource(card.barcode, in: hero)
+                    }
+                }
+                .card()
             }
         }
-        .card()
+    }
+
+    /// Shaped like the row it stands in for — a thumbnail, two lines of
+    /// text, a grade — so the wait reads as this list arriving rather than
+    /// as some other screen.
+    private var placeholderRow: some View {
+        HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(TL.line)
+                .frame(width: 52, height: 52)
+            VStack(alignment: .leading, spacing: 6) {
+                Capsule().fill(TL.line).frame(width: 150, height: 11)
+                Capsule().fill(TL.line).frame(width: 84, height: 9)
+            }
+            Spacer(minLength: 0)
+            Circle().fill(TL.line).frame(width: 28, height: 28)
+        }
+        .padding(.vertical, 10)
+        .accessibilityHidden(true)
     }
 
     /// One slot, first match wins — a stack of nudges is what pushed this

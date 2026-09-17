@@ -38,6 +38,10 @@ struct ScanScreen: View {
     @State private var lastSeen = Date.distantPast
     @State private var scanned = 0
     @State private var invalidCount = 0
+    /// The beat between recognising a code and handing over to the sheet.
+    /// Without it the camera cuts to a product with no acknowledgement that
+    /// anything was read — the one moment on this screen worth marking.
+    @State private var locked = false
     /// nil until the camera permission question is settled.
     @State private var authorized: Bool?
 
@@ -140,9 +144,14 @@ struct ScanScreen: View {
         .padding(.top, 8)
     }
 
+    private var reticleCaption: String {
+        if locked { return "Got it" }
+        return cameraActive ? "Point at a barcode" : "Camera off while you read"
+    }
+
     private var reticle: some View {
         VStack(spacing: 20) {
-            Text(cameraActive ? "Point at a barcode" : "Camera off while you read")
+            Text(reticleCaption)
                 .font(.caption.weight(.semibold))
                 .tracking(1)
                 .textCase(.uppercase)
@@ -163,15 +172,22 @@ struct ScanScreen: View {
 
             ZStack {
                 RoundedRectangle(cornerRadius: TL.R.xl, style: .continuous)
-                    .fill(TL.accent.opacity(cameraActive ? 0.06 : 0))
+                    .fill(TL.accent.opacity(locked ? 0.20 : (cameraActive ? 0.06 : 0)))
                 ReticleCorners()
-                    .stroke(cameraActive ? .white : TL.fg3, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                    .shadow(color: TL.accent.opacity(cameraActive ? 0.5 : 0), radius: 12)
-                if cameraActive {
+                    .stroke(locked ? TL.accent : (cameraActive ? .white : TL.fg3),
+                            style: StrokeStyle(lineWidth: locked ? 4 : 3, lineCap: .round))
+                    .shadow(color: TL.accent.opacity(locked ? 0.9 : (cameraActive ? 0.5 : 0)),
+                            radius: locked ? 20 : 12)
+                // The sweep stops the instant there's something to report —
+                // a line still hunting under a captured code reads as the
+                // scanner not having noticed.
+                if cameraActive && !locked {
                     ScanLine()
                 }
             }
             .frame(width: 250, height: 250)
+            .scaleEffect(locked ? 1.05 : 1)
+            .animation(.tlSnap, value: locked)
             .accessibilityHidden(true)
         }
     }
@@ -264,7 +280,7 @@ struct ScanScreen: View {
     // MARK: Handling
 
     private func handle(_ result: ScanResult) {
-        guard cameraActive else { return }
+        guard cameraActive, !locked else { return }
         switch result {
         case .qr(let value):
             qr = value
@@ -284,7 +300,15 @@ struct ScanScreen: View {
                 return
             }
             scanned += 1
-            presented = .product(BarcodeChecksum.normalized(code))
+            let normalized = BarcodeChecksum.normalized(code)
+            withAnimation(.tlSnap) { locked = true }
+            Task {
+                // Long enough to register as confirmation, short enough that
+                // nobody waiting on a result would call it a delay.
+                try? await Task.sleep(for: .milliseconds(220))
+                presented = .product(normalized)
+                locked = false
+            }
         }
     }
 }
@@ -347,19 +371,42 @@ struct ManualEntrySheet: View {
     var body: some View {
         NavigationStack(path: $path) {
             VStack(alignment: .leading, spacing: 20) {
-                Text("Type the barcode")
-                    .font(.title2.weight(.bold))
-                Text("The 8, 12 or 13 digits printed under the bars.")
-                    .font(.subheadline)
-                    .foregroundStyle(TL.fg2)
+                VStack(alignment: .leading, spacing: 6) {
+                    Eyebrow(text: "Manual entry")
+                    Text("Type the barcode")
+                        .font(.displayM)
+                    Text("The 8, 12 or 13 digits printed under the bars.")
+                        .font(.subheadline)
+                        .foregroundStyle(TL.fg2)
+                }
 
+                // Nested enclosure: an outer tray holding an inner plate,
+                // with the inner radius stepped down by the tray's own
+                // padding so the two curves stay concentric. A field sitting
+                // flat on the background is the thing that reads as a form;
+                // this reads as an instrument.
                 TextField("8901234567890", text: $code)
                     .keyboardType(.numberPad)
                     .font(.system(.title2, design: .monospaced).weight(.semibold))
+                    .tracking(2)
                     .focused($focused)
-                    .padding(18)
+                    .padding(.horizontal, 16)
+                    .frame(height: 60)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .glassEffect(.regular, in: RoundedRectangle(cornerRadius: TL.R.md, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: TL.R.md, style: .continuous).strokeBorder(valid ? TL.accent : .clear))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: TL.R.md, style: .continuous)
+                            .strokeBorder(valid ? TL.accent : TL.line, lineWidth: valid ? 1.5 : 1)
+                    }
+                    .padding(6)
+                    .background {
+                        RoundedRectangle(cornerRadius: TL.R.lg, style: .continuous)
+                            .fill(TL.surface)
+                            .overlay {
+                                RoundedRectangle(cornerRadius: TL.R.lg, style: .continuous)
+                                    .strokeBorder(TL.line)
+                            }
+                    }
                     // Without this, VoiceOver reads the placeholder digits
                     // themselves as the field's name — a real number read
                     // out is a strange way to hear "this is the barcode
@@ -375,11 +422,14 @@ struct ManualEntrySheet: View {
                 HStack(spacing: 8) {
                     Image(systemName: valid ? "checkmark.circle.fill" : "circle.dotted")
                         .foregroundStyle(valid ? TL.accent : TL.fg3)
+                        .contentTransition(.symbolEffect(.replace))
                     Text(valid ? "Looks like a valid barcode" : "\(digits.count) digit\(digits.count == 1 ? "" : "s")")
-                        .foregroundStyle(TL.fg3)
+                        .foregroundStyle(valid ? TL.fg2 : TL.fg3)
+                        .contentTransition(.numericText())
                 }
                 .font(.footnote.weight(.medium))
                 .animation(.tl(0.25), value: valid)
+                .animation(.tl(0.25), value: digits.count)
 
                 Spacer()
 

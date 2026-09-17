@@ -58,6 +58,11 @@ struct ProductLoaderScreen: View {
             let product = try await API.product(barcode: barcode)
             withAnimation(.tl(0.4)) { state = .loaded(product) }
             ScanRecord.record(product, in: context, bump: addsHistory, createIfMissing: addsHistory)
+            // Same gate as history: only a real scan or a typed barcode puts
+            // anything in the Dynamic Island. Opening a product from search
+            // or an alternative is browsing, and browsing shouldn't follow
+            // you onto the lock screen.
+            if addsHistory { ScanActivity.show(product) }
         } catch APIError.notFound {
             if initial == nil { withAnimation(.tl(0.4)) { state = .notFound } }
         } catch {

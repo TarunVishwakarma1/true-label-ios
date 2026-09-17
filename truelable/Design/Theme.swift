@@ -171,8 +171,18 @@ extension View {
     /// depth together, so a screen reads as a hierarchy instead of a stack
     /// of identical panes. `fill` tints the glass rather than hiding what is
     /// behind it.
-    func card(_ level: CardLevel = .raised, fill: Color = TL.surface) -> some View {
-        modifier(GlassCard(level: level, tint: fill))
+    /// `solid` opts the card out of Liquid Glass and onto a flat fill with
+    /// the same radius, padding, border and shadow.
+    ///
+    /// Use it for any card that gets **moved** — offset, scaled or rotated.
+    /// `glassEffect` is a live system-compositor material that samples what
+    /// is behind it; it is not a SwiftUI layer, which is why
+    /// `compositingGroup()` cannot flatten it and why a transformed glass
+    /// card's background visibly separates from its own content. The Verify
+    /// deck hit this repeatedly: every card there is offset and scaled, and
+    /// the top one is dragged and rotated on every frame.
+    func card(_ level: CardLevel = .raised, fill: Color = TL.surface, solid: Bool = false) -> some View {
+        modifier(GlassCard(level: level, tint: fill, solid: solid))
     }
 
     /// The ground every screen stands on: a flat base, then the static
@@ -193,8 +203,11 @@ extension View {
     }
 
     func screenBackground() -> some View {
-        background { Backdrop() }
-            .background(TL.bg.ignoresSafeArea())
+        background {
+            Backdrop()
+                .overlay { Grain() }
+        }
+        .background(TL.bg.ignoresSafeArea())
     }
 }
 
@@ -270,6 +283,8 @@ private struct GlassCard: ViewModifier {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     var level: CardLevel
     var tint: Color
+    /// Opt out of the live material. See `card(_:fill:solid:)`.
+    var solid: Bool
 
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: level.radius, style: .continuous)
@@ -280,10 +295,18 @@ private struct GlassCard: ViewModifier {
             .frame(maxWidth: .infinity, alignment: .leading)
             .clipShape(shape)
 
-        if reduceTransparency {
+        if reduceTransparency || solid {
             inner
                 .background(tint, in: shape)
-                .overlay(shape.strokeBorder(TL.line))
+                .overlay {
+                    shape.strokeBorder(
+                        LinearGradient(colors: [TL.accent.opacity(level.edge), TL.accent.opacity(0.04)],
+                                       startPoint: .topLeading, endPoint: .bottomTrailing),
+                        lineWidth: 1
+                    )
+                    .allowsHitTesting(false)
+                }
+                .shadow(color: .black.opacity(drop.opacity), radius: drop.radius, y: drop.y)
         } else {
             inner
                 .glassEffect(.regular.tint(tint.opacity(level.tintStrength)), in: shape)

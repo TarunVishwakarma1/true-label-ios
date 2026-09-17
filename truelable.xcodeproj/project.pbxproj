@@ -79,6 +79,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		F1A2B3C4D5E60718293A4B5C /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		613833912F706503D8D0525E /* QuickScanWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -163,6 +168,7 @@
 				D4A1B0763050791200FC5D00 /* Products */,
 				AC6BCF6D9D6A1BAF515AE963 /* Frameworks */,
 				613833912F706503D8D0525E /* QuickScanWidget */,
+				F1A2B3C4D5E60718293A4B5C /* Shared */,
 			);
 			sourceTree = "<group>";
 		};
@@ -206,6 +212,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				D4A1B0773050791200FC5D00 /* truelable */,
+				F1A2B3C4D5E60718293A4B5C /* Shared */,
 			);
 			name = truelable;
 			productName = truelable;
@@ -268,6 +275,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				613833912F706503D8D0525E /* QuickScanWidget */,
+				F1A2B3C4D5E60718293A4B5C /* Shared */,
 			);
 			name = QuickScanWidgetExtension;
 			productName = QuickScanWidgetExtension;

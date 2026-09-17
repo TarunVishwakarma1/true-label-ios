@@ -24,14 +24,21 @@ struct AccountView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    if account.signedIn {
-                        signedIn
-                    } else if Capabilities.signInWithApple {
-                        signedOut
-                    } else {
-                        nameOnly
+                    Group {
+                        if account.signedIn {
+                            signedIn
+                        } else if Capabilities.signInWithApple {
+                            signedOut
+                        } else {
+                            nameOnly
+                        }
                     }
-                    whatWeStore
+                    .appear(0)
+                    // Signing in or out swaps the whole panel, so the swap
+                    // is worth animating — it is the only thing that
+                    // confirms the tap did anything.
+                    .animation(.tlSettle, value: account.signedIn)
+                    whatWeStore.appear(1)
                 }
                 .padding(.horizontal, TL.gutter)
                 .padding(.bottom, 32)
