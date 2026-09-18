@@ -1,11 +1,3 @@
-//
-//  CompareView.swift
-//  truelable
-//
-//  Side-by-side. The best value in each row is lit — a number alone
-//  doesn't tell you which one to pick, a highlighted one does.
-//
-
 import SwiftUI
 
 struct CompareView: View {
@@ -39,7 +31,7 @@ struct CompareView: View {
             }
         }
         .presentationBackground(TL.bg)
-        .presentationCornerRadius(32)
+        .presentationCornerRadius(TL.R.sheet)
     }
 
     private var header: some View {
@@ -47,7 +39,7 @@ struct CompareView: View {
             Color.clear.frame(width: labelWidth, height: 1)
             ForEach(records) { r in
                 VStack(alignment: .leading, spacing: 8) {
-                    ProductThumb(url: r.imageURL, size: 56, radius: 16)
+                    ProductThumb(url: r.imageURL, size: 56)
                     Text(r.name).font(.subheadline.weight(.semibold)).lineLimit(2)
                     if !r.brand.isEmpty {
                         Text(r.brand).font(.caption).foregroundStyle(TL.fg3).lineLimit(1)
@@ -119,9 +111,7 @@ struct CompareView: View {
                 .font(.subheadline.weight(highlighted ? .bold : .regular))
                 .numeric()
                 .foregroundStyle(highlighted ? TL.good : TL.fg)
-            // Colour alone can't carry "this is the better one" — it fails
-            // for anyone who can't separate the green, and it fails in a
-            // screenshot. The mark says it outright.
+
             if highlighted {
                 Image(systemName: "checkmark")
                     .font(.caption2.weight(.bold))

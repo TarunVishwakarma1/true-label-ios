@@ -1,15 +1,3 @@
-//
-//  LiveTextReader.swift
-//  truelable
-//
-//  Live, multi-frame text capture. VisionKit keeps recognising while the
-//  user holds the label steady; every frame's lines are folded into a
-//  running tally so a single blurred or partial frame never decides the
-//  result. "Capture" returns the lines that held up across frames, in
-//  reading order, with their on-screen height (the brand is nearly always
-//  the tallest text on the front of a pack).
-//
-
 import SwiftUI
 import Vision
 import VisionKit
@@ -26,7 +14,6 @@ struct TextTake: Hashable, Sendable {
     var isEmpty: Bool { lines.isEmpty }
 }
 
-/// Owned by the screen; the camera writes into it, the screen reads it.
 @Observable
 final class TextTally {
     private struct Entry { var count = 0; var height: CGFloat = 0; var y: CGFloat = 0; var variants: [String: Int] = [:] }
@@ -57,8 +44,6 @@ final class TextTally {
         lockedCount = entries.values.filter { $0.count >= 2 }.count
     }
 
-    /// Lines seen on at least two frames, or on the latest one (so a fresh
-    /// steady hold still counts), ordered top-to-bottom.
     func capture() -> TextTake {
         let lines = entries
             .filter { $0.value.count >= 2 || latest.contains($0.key) }
@@ -84,9 +69,6 @@ struct LiveTextReader<Overlay: View>: UIViewControllerRepresentable {
 
     static var isUsable: Bool { DataScannerViewController.isSupported }
 
-    /// English plus whatever the device prefers, limited to what the
-    /// recognizer actually supports — Hindi/Devanagari brand marks on
-    /// Indian packs come through when the device can read them.
     private static var languages: [String] {
         let supported = DataScannerViewController.supportedTextRecognitionLanguages
         var wanted = ["en-US", "en-IN", "hi-IN"] + Locale.preferredLanguages

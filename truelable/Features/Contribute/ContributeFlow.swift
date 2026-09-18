@@ -1,13 +1,3 @@
-//
-//  ContributeFlow.swift
-//  truelable
-//
-//  Three live takes — front of pack, ingredient list, nutrition table —
-//  then one review. Each take keeps reading until the text holds steady
-//  across frames, so a shaky first frame never decides anything. Front and
-//  nutrition are optional; ingredients are what makes the product real.
-//
-
 import SwiftUI
 
 struct ContributeFlow: View {
@@ -70,7 +60,6 @@ struct ContributeFlow: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
         .sensoryFeedback(.success, trigger: finished)
         .sensoryFeedback(.impact(weight: .medium), trigger: captured)
     }
@@ -87,14 +76,12 @@ struct ContributeFlow: View {
         HStack(spacing: 4) {
             ForEach(0..<5, id: \.self) { i in
                 Capsule()
-                    .fill(i <= stepIndex ? TL.accent : Color.white.opacity(0.16))
+                    .fill(i <= stepIndex ? TL.accent : TL.track)
                     .frame(width: i == stepIndex ? 22 : 8, height: 4)
             }
         }
         .animation(.tl(0.35), value: stepIndex)
     }
-
-    // MARK: Takes
 
     @ViewBuilder
     private func takeScreen(_ take: Take) -> some View {
@@ -128,7 +115,6 @@ struct ContributeFlow: View {
 
             Spacer()
 
-            // Locked-line counter — the user sees the tally settle.
             HStack(spacing: 8) {
                 Circle()
                     .fill(tally.lockedCount > 0 ? TL.accent : TL.fg3)
@@ -138,10 +124,10 @@ struct ContributeFlow: View {
                     .numeric()
                     .contentTransition(.numericText())
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(TL.fg)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .glassEffect(.regular, in: .capsule)
+            .plate(TL.surface, lifted: true)
             .animation(.tl(0.3), value: tally.lockedCount)
             .padding(.bottom, 18)
 
@@ -149,10 +135,10 @@ struct ContributeFlow: View {
                 if take.optional {
                     Button("Skip") { advance(from: take, with: nil) }
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(TL.fg)
                         .frame(height: 56)
                         .padding(.horizontal, 22)
-                        .glassEffect(.regular.interactive(), in: .capsule)
+                        .plate(TL.surface, lifted: true)
                         .buttonStyle(.pressable)
                 }
                 Button {
@@ -192,8 +178,6 @@ struct ContributeFlow: View {
         tally.reset()
         withAnimation(.tl()) { step = .take(.front) }
     }
-
-    // MARK: Terminal states
 
     private func waiting(_ text: String) -> some View {
         VStack(spacing: 20) {
@@ -266,9 +250,6 @@ struct ContributeFlow: View {
     }
 }
 
-/// Everything the camera read, editable. Front-of-pack candidates are
-/// offered as chips because a stylised or non-Latin brand mark is exactly
-/// what OCR gets wrong — the person holding the pack knows.
 private struct ReviewStep: View {
     var onSubmit: (LabelOCR.Draft) -> Void
     var onRetake: () -> Void
@@ -337,7 +318,7 @@ private struct ReviewStep: View {
                 }
                 .padding(18)
                 .background(TL.paper, in: RoundedRectangle(cornerRadius: TL.R.sm, style: .continuous))
-                .shadow(color: .black.opacity(0.35), radius: 20, y: 10)
+                .blockShadow()
 
                 VStack(alignment: .leading, spacing: 12) {
                     SectionHeader(title: "Nutrition per 100 g", detail: "optional")
@@ -416,6 +397,6 @@ private struct ReviewStep: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: TL.R.sm, style: .continuous))
+        .plate(TL.surface)
     }
 }

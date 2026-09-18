@@ -1,16 +1,3 @@
-//
-//  ImageLightboxView.swift
-//  truelable
-//
-//  Full-screen viewer for a product's photo(s). The API only ever returns
-//  one image today, but this takes an array and pages with a native
-//  TabView — so a second/third photo (ingredients, nutrition) slots in
-//  later without touching this file. No custom drag-to-dismiss: layering
-//  our own DragGesture over TabView's own paging gesture is exactly the
-//  swipe-conflict bug already fixed once in VerifyView. Tap the image or
-//  the close button instead.
-//
-
 import SwiftUI
 
 struct ImageLightboxView: View {

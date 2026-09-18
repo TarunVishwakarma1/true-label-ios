@@ -1,15 +1,3 @@
-//
-//  CrashReporter.swift
-//  truelable
-//
-//  MetricKit, not a hand-rolled signal handler: a signal handler has to be
-//  async-signal-safe (no malloc, no ARC, most of the Swift runtime is off
-//  limits) to avoid crashing *harder* while reporting a crash — that's a
-//  narrow, easy-to-get-wrong problem real crash reporters spend thousands
-//  of lines getting right. The OS already solves it and hands the result
-//  to MXMetricManagerSubscriber on a later launch, typically within a day.
-//
-
 import Foundation
 import MetricKit
 import UIKit
@@ -40,10 +28,6 @@ final class CrashReporter: NSObject, MXMetricManagerSubscriber {
         }
     }
 
-    /// The actual mapping logic, pulled out of `didReceive` so it's
-    /// testable without MetricKit's opaque, OS-only diagnostic types —
-    /// `MXCrashDiagnostic` has no public initializer, so a test can never
-    /// construct one to hand to this function directly.
     static func submission(
         exceptionType: NSNumber?,
         signal: NSNumber?,

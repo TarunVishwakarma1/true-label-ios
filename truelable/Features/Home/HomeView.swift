@@ -1,18 +1,3 @@
-//
-//  HomeView.swift
-//  truelable
-//
-//  A landing page, not a feed: it fits on one screen, so there is nothing
-//  to drag. Trends live under You, popular products live in Search — both
-//  were duplicated here and both are what made this page overflow.
-//
-//  What changed in the redesign: the page used to arrive all at once, with
-//  only the header and headline animating and everything below simply being
-//  there. Now it assembles, the rail snaps, tapping a product grows it out
-//  of the card that was tapped, and the counts roll when they change. None
-//  of that is decoration — each one answers "what just happened?".
-//
-
 import SwiftUI
 import SwiftData
 
@@ -115,8 +100,8 @@ struct HomeView: View {
                 .padding(.horizontal, 16)
                 .frame(maxWidth: .infinity)
                 .frame(height: 54)
-                .glassEffect(.regular.interactive(), in: .capsule)
-                .contentShape(Capsule())
+                .plate(TL.surface, radius: 99, lifted: true)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.pressable)
 
@@ -128,8 +113,8 @@ struct HomeView: View {
                     .foregroundStyle(TL.fg2)
                     .engraved()
                     .frame(width: 54, height: 54)
-                    .glassEffect(.regular.interactive(), in: .circle)
-                    .contentShape(Circle())
+                    .plate(TL.surface, radius: 99, lifted: true)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.pressable)
             .accessibilityLabel("Type a barcode")
@@ -137,9 +122,6 @@ struct HomeView: View {
         .sensoryFeedback(.selection, trigger: router.sheet)
     }
 
-    /// Was three separate tiles, which read as three unrelated widgets
-    /// competing for the same row. One surface divided by hairlines reads as
-    /// one fact about the user, which is what it is.
     private var stats: some View {
         HStack(spacing: 0) {
             stat("\(records.count)", "Products")
@@ -158,8 +140,7 @@ struct HomeView: View {
             Text(value)
                 .font(.displayS)
                 .numeric()
-                // The count rolling is the only signal that a scan landed
-                // while this screen was already open.
+
                 .contentTransition(.numericText())
             Text(label)
                 .font(.caption)
@@ -173,7 +154,7 @@ struct HomeView: View {
     private var statDivider: some View {
         Rectangle()
             .fill(TL.line)
-            .frame(width: 1, height: 28)
+            .frame(width: 1, height: 30)
     }
 
     private var thisWeek: Int {
@@ -199,9 +180,7 @@ struct HomeView: View {
                 .scrollTargetLayout()
             }
             .scrollIndicators(.hidden)
-            // Cards line up under the finger instead of drifting to a stop
-            // mid-card, which is the difference between a rail and a row
-            // that happens to scroll.
+
             .scrollTargetBehavior(.viewAligned)
         }
     }
@@ -243,27 +222,22 @@ struct HomeView: View {
         }
     }
 
-    /// Shaped like the row it stands in for — a thumbnail, two lines of
-    /// text, a grade — so the wait reads as this list arriving rather than
-    /// as some other screen.
     private var placeholderRow: some View {
         HStack(spacing: 12) {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(TL.line)
+                .fill(TL.track)
                 .frame(width: 52, height: 52)
             VStack(alignment: .leading, spacing: 6) {
-                Capsule().fill(TL.line).frame(width: 150, height: 11)
-                Capsule().fill(TL.line).frame(width: 84, height: 9)
+                Capsule().fill(TL.track).frame(width: 150, height: 11)
+                Capsule().fill(TL.track).frame(width: 84, height: 9)
             }
             Spacer(minLength: 0)
-            Circle().fill(TL.line).frame(width: 28, height: 28)
+            Circle().fill(TL.track).frame(width: 28, height: 28)
         }
         .padding(.vertical, 10)
         .accessibilityHidden(true)
     }
 
-    /// One slot, first match wins — a stack of nudges is what pushed this
-    /// page past a screen in the first place.
     @ViewBuilder
     private var nudge: some View {
         if DietaryPreference.decode(dietaryRaw).isEmpty {
@@ -304,7 +278,7 @@ struct RecentCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
-                ProductThumb(url: record.imageURL, size: 52, radius: 14)
+                ProductThumb(url: record.imageURL, size: 52)
                 Spacer()
                 GradeBadge(grade: record.nutriscoreGrade)
             }
@@ -329,5 +303,4 @@ struct RecentCard: View {
     HomeView()
         .environment(AppRouter())
         .modelContainer(for: ScanRecord.self, inMemory: true)
-        .preferredColorScheme(.dark)
 }

@@ -1,24 +1,8 @@
-//
-//  QuickScanWidget.swift
-//  QuickScanWidgetExtension
-//
-//  Static on purpose: no scan streak, no live counts. Reading anything from
-//  the main app (history, verified count) would need an App Group, which
-//  needs a paid Apple Developer Program membership to register — the same
-//  constraint that already keeps Sign in with Apple off in
-//  truelable.entitlements. A widget with nothing to say until that exists
-//  is still a real value: one tap from the Home Screen straight into Scan,
-//  no app-switch-then-tap-Scan round trip.
-//
-
 import WidgetKit
 import SwiftUI
 
 private enum WidgetTL {
-    // Mirrors TL.bg / TL.accent in Design/Theme.swift. Duplicated rather
-    // than shared because this target can't see the app target's source
-    // without cross-target file membership on the synchronized group —
-    // two color constants isn't worth that complexity.
+
     static let bg = Color(red: 0x0C / 255, green: 0x0B / 255, blue: 0x0A / 255)
     static let accent = Color(red: 0xEF / 255, green: 0xE6 / 255, blue: 0xD4 / 255)
 }
@@ -37,8 +21,7 @@ struct QuickScanProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<QuickScanEntry>) -> Void) {
-        // Content never changes, so one entry with no refresh is correct —
-        // there is nothing a reload would ever pick up.
+
         completion(Timeline(entries: [QuickScanEntry(date: .now)], policy: .never))
     }
 }
@@ -56,9 +39,7 @@ struct QuickScanWidgetView: View {
                     .foregroundStyle(.white)
             }
         }
-        // The one entry point back into the app: TrueLabelApp's onOpenURL
-        // matches this scheme+host and sets router.scannerPresented —
-        // the exact same trigger the empty History state already uses.
+
         .widgetURL(URL(string: "truelabel://scan"))
     }
 }

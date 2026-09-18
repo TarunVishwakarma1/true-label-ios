@@ -1,17 +1,5 @@
-//
-//  SearchScreen.swift
-//  truelable
-//
-//  Find a product without the pack in hand. Local catalogue first (fuzzy,
-//  ranked), topped up from Open Food Facts by the backend. Digits go
-//  straight to a barcode look-up.
-//
-
 import SwiftUI
 
-/// Search owns its stack rather than borrowing Home's. A `.searchable`
-/// list pushed into another screen's stack, under a hidden navigation bar,
-/// is the fragile arrangement this used to be.
 struct SearchSheet: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -25,7 +13,7 @@ struct SearchSheet: View {
                 }
         }
         .presentationBackground(TL.bg)
-        .presentationCornerRadius(TL.R.xl)
+        .presentationCornerRadius(TL.R.sheet)
     }
 }
 
@@ -36,9 +24,7 @@ struct SearchScreen: View {
     @State private var searching = false
     @State private var failed = false
     @AppStorage("v2.search.recent") private var recentRaw = ""
-    /// Declared here rather than in `SearchSheet` so the zoom transition's
-    /// source and destination live in the same view — the destination moved
-    /// down here with it.
+
     @Namespace private var hero
 
     private var recents: [String] { recentRaw.split(separator: "\n").map(String.init).filter { !$0.isEmpty } }
@@ -73,9 +59,7 @@ struct SearchScreen: View {
     private var idle: some View {
         if !recents.isEmpty {
             Section {
-                // A rail rather than a stack of rows: six past searches used
-                // to cost six full-width rows before the reader reached
-                // anything they hadn't already seen.
+
                 ScrollView(.horizontal) {
                     HStack(spacing: 8) {
                         ForEach(recents, id: \.self) { term in
@@ -92,9 +76,7 @@ struct SearchScreen: View {
                                 .foregroundStyle(TL.fg2)
                                 .padding(.horizontal, 12)
                                 .frame(height: 34)
-                                .background {
-                                    Capsule().fill(TL.surface).overlay(Capsule().stroke(TL.line))
-                                }
+                                .plate(TL.surface, lifted: true)
                             }
                             .buttonStyle(.pressable)
                         }
@@ -133,8 +115,7 @@ struct SearchScreen: View {
                 Eyebrow(text: "Popular in \(API.country)")
             }
         } else if recents.isEmpty {
-            // First run, nothing typed, nothing fetched yet — say what this
-            // box is for instead of showing a blank screen.
+
             VStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
                     .font(.largeTitle)
@@ -180,16 +161,21 @@ struct SearchScreen: View {
         }
 
         if searching && results.isEmpty {
-            ForEach(0..<4, id: \.self) { _ in
-                HStack(spacing: 16) {
-                    RoundedRectangle(cornerRadius: TL.R.md, style: .continuous)
-                        .fill(TL.line)
-                        .frame(width: 56, height: 56)
+
+            ForEach(0..<6, id: \.self) { i in
+                HStack(spacing: 14) {
+                    RoundedRectangle(cornerRadius: TL.R.sm, style: .continuous)
+                        .fill(TL.track)
+                        .frame(width: 64, height: 64)
                     VStack(alignment: .leading, spacing: 7) {
-                        Capsule().fill(TL.line).frame(width: 160, height: 11)
-                        Capsule().fill(TL.line).frame(width: 96, height: 9)
+                        Capsule().fill(TL.track)
+                            .frame(width: [172.0, 138.0, 196.0][i % 3], height: 12)
+                        Capsule().fill(TL.track).frame(width: 88, height: 10)
                     }
-                    Spacer(minLength: 0)
+                    Spacer(minLength: 8)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(TL.track)
+                        .frame(width: 26, height: 26)
                 }
                 .padding(.vertical, 4)
                 .listRowBackground(Color.clear)
@@ -241,7 +227,7 @@ struct SearchScreen: View {
             searching = false
             return
         }
-        // Debounce: typing cancels the previous task before it fires.
+
         try? await Task.sleep(for: .milliseconds(320))
         guard !Task.isCancelled else { return }
         searching = true

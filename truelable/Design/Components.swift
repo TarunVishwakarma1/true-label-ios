@@ -1,50 +1,43 @@
-//
-//  Components.swift
-//  truelable
-//
-//  The small shared vocabulary every screen is built from.
-//
-
 import SwiftUI
 import UIKit
 
-// MARK: - Buttons
-
 struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        let down = configuration.isPressed
+        return configuration.label
             .font(.body.weight(.semibold))
             .foregroundStyle(TL.ink)
-            .engraved(0.6)
             .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .background(TL.accentGradient, in: RoundedRectangle(cornerRadius: TL.R.md, style: .continuous))
-            .shadow(color: .black.opacity(configuration.isPressed ? 0.2 : 0.45), radius: 16, y: 8)
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.tl(0.25), value: configuration.isPressed)
+            .frame(height: 54)
+            .background(TL.accent, in: Capsule())
+            .shadow(color: TL.shadow, radius: down ? 8 : 22, y: down ? 4 : 11)
+            .scaleEffect(down ? 0.975 : 1)
+            .animation(.tlSnap, value: down)
     }
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        let down = configuration.isPressed
+        return configuration.label
             .font(.body.weight(.semibold))
             .foregroundStyle(TL.fg)
-            .engraved()
             .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: TL.R.md, style: .continuous))
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.tl(0.25), value: configuration.isPressed)
+            .frame(height: 54)
+            .background(TL.surface, in: Capsule())
+            .overlay { Capsule().strokeBorder(TL.line, lineWidth: TL.border) }
+            .scaleEffect(down ? 0.975 : 1)
+            .animation(.tlSnap, value: down)
     }
 }
 
 struct PressableStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .opacity(configuration.isPressed ? 0.85 : 1)
-            .animation(.tl(0.25), value: configuration.isPressed)
+        let down = configuration.isPressed
+        return configuration.label
+            .scaleEffect(down ? 0.97 : 1)
+            .opacity(down ? 0.88 : 1)
+            .animation(.tlSnap, value: down)
     }
 }
 
@@ -58,7 +51,6 @@ extension ButtonStyle where Self == PressableStyle {
     static var pressable: PressableStyle { .init() }
 }
 
-/// Round glass icon button for chrome over camera/hero content.
 struct IconButton: View {
     var systemImage: String
     var label: String
@@ -68,25 +60,23 @@ struct IconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.body.weight(.semibold))
+                .font(.body.weight(.bold))
                 .foregroundStyle(active ? TL.ink : TL.fg)
                 .frame(width: 44, height: 44)
-                .glassEffect(active ? .regular.tint(TL.accent).interactive() : .regular.interactive(), in: .circle)
+                .background(active ? TL.accent : TL.surface, in: Circle())
+                .overlay { Circle().strokeBorder(TL.line, lineWidth: TL.border) }
+                .shadow(color: TL.shadow, radius: 14, y: 6)
         }
         .buttonStyle(.pressable)
         .accessibilityLabel(label)
     }
 }
 
-/// The one divider in the app. `Divider()` insets and tints itself
-/// differently depending on what it sits inside.
 struct Hairline: View {
     var body: some View {
         Rectangle().fill(TL.line).frame(height: 1)
     }
 }
-
-// MARK: - Text bits
 
 struct SectionHeader: View {
     var title: String
@@ -128,14 +118,13 @@ struct Pill: View {
             if let icon { Image(systemName: icon).font(.caption2.weight(.bold)) }
             Text(text).font(.caption.weight(.semibold))
         }
-        .foregroundStyle(filled ? TL.ink : color)
-        .padding(.horizontal, 10)
+        .foregroundStyle(filled ? TL.ink : TL.fg2)
+        .padding(.horizontal, 11)
         .padding(.vertical, 6)
-        .background(filled ? color : color.opacity(0.18), in: Capsule())
+        .background(filled ? color : TL.elevated, in: Capsule())
+        .overlay { if !filled { Capsule().strokeBorder(TL.line, lineWidth: TL.border) } }
     }
 }
-
-// MARK: - Data visuals
 
 struct ScoreRing: View {
     var score: Int
@@ -147,7 +136,7 @@ struct ScoreRing: View {
 
     var body: some View {
         ZStack {
-            Circle().stroke(Color.white.opacity(0.08), lineWidth: lineWidth)
+            Circle().stroke(TL.track, lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: shown ? CGFloat(score) / 100 : 0)
                 .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
@@ -170,8 +159,6 @@ struct ScoreRing: View {
     }
 }
 
-/// A–E strip with the product's grade lit up. Letter + colour, never
-/// colour alone.
 struct GradeStrip: View {
     var grade: String?
 
@@ -183,7 +170,7 @@ struct GradeStrip: View {
                     .font(.caption.weight(.heavy))
                     .foregroundStyle(on ? TL.ink : TL.fg3)
                     .frame(width: on ? 34 : 26, height: 26)
-                    .background(on ? TL.grade(letter) : Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: TL.R.sm, style: .continuous))
+                    .background(on ? TL.grade(letter) : TL.track, in: RoundedRectangle(cornerRadius: TL.R.sm, style: .continuous))
             }
         }
         .accessibilityElement()
@@ -200,10 +187,10 @@ struct BarMeter: View {
 
     var body: some View {
         GeometryReader { geo in
-            RoundedRectangle(cornerRadius: height / 2)
-                .fill(Color.white.opacity(0.08))
+            Capsule()
+                .fill(TL.track)
                 .overlay(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: height / 2)
+                    Capsule()
                         .fill(color)
                         .frame(width: geo.size.width * (shown ? min(max(fraction, 0), 1) : 0))
                         .animation(.tl(0.8), value: shown)
@@ -237,12 +224,10 @@ struct StatTile: View {
     }
 }
 
-// MARK: - Product image
-
 struct ProductThumb: View {
     var url: URL?
     var size: CGFloat = 64
-    var radius: CGFloat = 16
+    var radius: CGFloat = TL.R.sm
 
     var body: some View {
         CachedAsyncImage(url: url) { image in
@@ -254,9 +239,13 @@ struct ProductThumb: View {
             }
         }
         .frame(width: size, height: size)
-        .background(.white.opacity(0.92))
+        .background(TL.paper)
         .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(.white.opacity(0.18)))
+        .overlay {
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .strokeBorder(TL.line, lineWidth: TL.border)
+                .allowsHitTesting(false)
+        }
     }
 
     private var placeholder: some View {
@@ -269,11 +258,6 @@ struct ProductThumb: View {
     }
 }
 
-/// Drop-in `AsyncImage` replacement backed by `ImageCache`. Product photos
-/// come from Open Food Facts, which sends no `Cache-Control` — without this,
-/// `URLCache` never persists the response no matter how large its capacity
-/// is, and the same image refetches from scratch every time its view
-/// reappears (tab switch, back button, a row scrolled off then on again).
 struct CachedAsyncImage<Content: View>: View {
     let url: URL?
     @ViewBuilder var content: (Image?) -> Content
@@ -301,9 +285,7 @@ actor ImageCache {
     private let session: URLSession = {
         let config = URLSessionConfiguration.default
         config.urlCache = URLCache.shared
-        // Fail fast rather than leave a thumbnail spinning for 20-30s when
-        // Open Food Facts' CDN stalls — the placeholder is a fine outcome,
-        // an indefinitely hung request is not.
+
         config.timeoutIntervalForRequest = 8
         return URLSession(configuration: config)
     }()
@@ -334,9 +316,6 @@ actor ImageCache {
     }
 }
 
-// MARK: - Loading
-
-/// Pulsing placeholder rows — cheap (opacity only), no blur, no timeline.
 struct Skeleton: View {
     var lines: Int = 3
     var height: CGFloat = 12
@@ -345,7 +324,7 @@ struct Skeleton: View {
         VStack(alignment: .leading, spacing: 12) {
             ForEach(0..<lines, id: \.self) { i in
                 RoundedRectangle(cornerRadius: height / 2)
-                    .fill(Color.white.opacity(0.08))
+                    .fill(TL.track)
                     .frame(width: i == lines - 1 ? 120 : nil, height: height)
             }
         }
@@ -355,39 +334,43 @@ struct Skeleton: View {
     }
 }
 
-// MARK: - Product card row (search, trending, alternatives)
-
-/// Horizontal row for lists.
 struct ProductCardRow: View {
     let card: ProductCard
     var trailing: String? = nil
 
     var body: some View {
-        HStack(spacing: 16) {
-            ProductThumb(url: card.imageURL, size: 56, radius: 16)
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 14) {
+
+            ProductThumb(url: card.imageURL, size: 64)
+            VStack(alignment: .leading, spacing: 5) {
                 Text(card.productName)
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
-                HStack(spacing: 8) {
-                    if let brand = card.brand { Text(brand).lineLimit(1) }
+                HStack(spacing: 5) {
+                    if let brand = card.brand {
+                        Text(brand).lineLimit(1)
+                    }
                     if card.verified {
-                        Image(systemName: "checkmark.seal.fill").foregroundStyle(TL.accent)
+                        if card.brand != nil { Text("·") }
+                        Image(systemName: "checkmark.seal.fill")
+                        Text("Verified")
                     }
                 }
                 .font(.caption)
-                .foregroundStyle(TL.fg3)
+                .foregroundStyle(card.verified ? TL.good : TL.fg3)
+                .lineLimit(1)
             }
             Spacer(minLength: 8)
-            VStack(alignment: .trailing, spacing: 8) {
+            VStack(alignment: .trailing, spacing: 6) {
                 GradeBadge(grade: card.nutriscoreGrade)
                 if let trailing {
                     Text(trailing).font(.caption.weight(.semibold)).numeric().foregroundStyle(TL.good)
                 }
             }
-            Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundStyle(TL.fg3)
         }
+
+        .padding(.vertical, 4)
         .contentShape(Rectangle())
     }
 }
@@ -408,7 +391,6 @@ struct GradeBadge: View {
     }
 }
 
-/// Small "Plus" tag for gated affordances.
 struct PlusTag: View {
     var body: some View {
         Text("PLUS")
@@ -421,9 +403,6 @@ struct PlusTag: View {
     }
 }
 
-// MARK: - Brand
-
-/// Static brand mark — a barcode with two accent bars.
 struct BarcodeGlyph: View {
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
@@ -436,110 +415,18 @@ struct BarcodeGlyph: View {
     }
 }
 
-/// Static mesh — free at runtime because nothing animates, and the only
-/// thing the glass surfaces have to refract. Flat black behind glass just
-/// looks like flat black.
 struct Backdrop: View {
     var intensity: Double = 1
 
     var body: some View {
-        MeshGradient(
-            width: 3, height: 3,
-            points: [
-                [0, 0], [0.5, 0], [1, 0],
-                [0, 0.5], [0.55, 0.45], [1, 0.5],
-                [0, 1], [0.5, 1], [1, 1]
-            ],
-            colors: [
-                Color(hex: 0x0C0B0A), Color(hex: 0x191310), Color(hex: 0x2A1E12),
-                Color(hex: 0x0C0B0A), Color(hex: 0x1C1611), Color(hex: 0x14101A),
-                Color(hex: 0x1E1524), Color(hex: 0x0C0B0A), Color(hex: 0x0C0B0A)
-            ]
+
+        RadialGradient(
+            colors: [TL.fg.opacity(0.055 * intensity), .clear],
+            center: UnitPoint(x: 0.5, y: -0.08),
+            startRadius: 0,
+            endRadius: 560
         )
-        .opacity(intensity)
         .ignoresSafeArea()
-        .allowsHitTesting(false)
-    }
-}
-
-/// Film grain over the mesh. A perfectly smooth gradient reads as a render;
-/// the same gradient with a little tooth reads as a surface — and this app's
-/// whole identity is a printed paper label, so the ground should have some
-/// of the paper in it.
-///
-/// The tile is generated once and reused. It is deliberately tiny and tiled
-/// rather than a full-screen texture, and it never scrolls: it sits in the
-/// background layer behind content, not on top of it.
-struct Grain: View {
-    var opacity: Double = 0.055
-
-    var body: some View {
-        Image(uiImage: Self.tile)
-            .resizable(resizingMode: .tile)
-            .blendMode(.overlay)
-            .opacity(opacity)
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
-    }
-
-    /// Written as a raw pixel buffer rather than thousands of one-pixel
-    /// fills — same tile, without spending the first frame drawing it.
-    private static let tile: UIImage = {
-        let side = 96
-        var bytes = [UInt8](repeating: 255, count: side * side * 4)
-        for i in stride(from: 0, to: bytes.count, by: 4) {
-            // A narrow band around mid-grey. Wider than this and the grain
-            // stops reading as texture and starts reading as static.
-            let v = UInt8.random(in: 97...158)
-            bytes[i] = v
-            bytes[i + 1] = v
-            bytes[i + 2] = v
-        }
-        let cg = bytes.withUnsafeMutableBytes { raw -> CGImage? in
-            CGContext(
-                data: raw.baseAddress,
-                width: side, height: side,
-                bitsPerComponent: 8, bytesPerRow: side * 4,
-                space: CGColorSpaceCreateDeviceRGB(),
-                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-            )?.makeImage()
-        }
-        return cg.map(UIImage.init(cgImage:)) ?? UIImage()
-    }()
-}
-
-
-/// A highlight that slides back and forth along a shape's border. Ported
-/// from v1, where it marked the scan button as live. Rate-capped at 30fps —
-/// a slow breathing highlight reads no better at native refresh, and this
-/// one is on screen the whole time the app is.
-struct AnimatedGradientBorder<S: InsettableShape>: View {
-    var shape: S
-    var lineWidth: CGFloat = 1.5
-    var duration: Double = 2.5
-    var isPaused: Bool = false
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: isPaused || reduceMotion)) { timeline in
-            let raw = timeline.date.timeIntervalSinceReferenceDate
-                .truncatingRemainder(dividingBy: duration) / duration
-            let progress = (1 - cos(.pi * 2 * raw)) / 2 // eased, seamless loop
-
-            shape.strokeBorder(
-                LinearGradient(
-                    stops: [
-                        .init(color: .white.opacity(0.06), location: 0),
-                        .init(color: .white.opacity(0.7), location: progress),
-                        .init(color: .white.opacity(0.06), location: 1)
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                ),
-                lineWidth: lineWidth
-            )
-        }
         .allowsHitTesting(false)
     }
 }

@@ -1,11 +1,3 @@
-//
-//  NotFoundScreen.swift
-//  truelable
-//
-//  A valid barcode nobody has added yet. Owns the "add it" flow; once a
-//  submission lands, the loader reloads and the product appears.
-//
-
 import SwiftUI
 
 struct NotFoundScreen: View {
@@ -26,8 +18,7 @@ struct NotFoundScreen: View {
                 Image(systemName: "plus.viewfinder")
                     .font(.system(size: 40, weight: .medium))
                     .foregroundStyle(TL.warn)
-                    // A dead end is exactly where the screen should look like
-                    // it wants something from you.
+
                     .symbolEffect(.bounce, value: inviting)
             }
             .appear(0)
@@ -60,8 +51,7 @@ struct NotFoundScreen: View {
         .padding(28)
         .toolbar { if inSheet { CloseButton() } }
         .task {
-            // One nudge shortly after landing, not a loop — the icon should
-            // catch the eye once, then leave the reader alone.
+
             try? await Task.sleep(for: .milliseconds(900))
             inviting = true
         }

@@ -1,13 +1,3 @@
-//
-//  Product.swift
-//  truelable
-//
-//  The one product model: decoded straight from the backend's
-//  `ProductResponse`, snapshotted as-is into scan history (`ScanRecord`),
-//  and rendered everywhere. Codable keys match the API's snake_case fields
-//  after `convertFromSnakeCase`.
-//
-
 import Foundation
 
 struct Product: Codable, Hashable, Identifiable, Sendable {
@@ -23,30 +13,25 @@ struct Product: Codable, Hashable, Identifiable, Sendable {
     var verificationCount: Int
     let nutrition: Nutrition
     let ingredients: String?
-    /// Slugs as the source publishes them: `"peanuts"`, `"gluten"`. `nil`
-    /// means the source doesn't publish allergens at all, `[]` means it
-    /// publishes "none" — never treat the first as the second.
+
     let allergens: [String]?
-    /// "May contain". A trace is not an ingredient, and for an allergy it is
-    /// the line that matters most.
+
     let traces: [String]?
-    /// Certifications: `"gluten-free"`, `"organic"`, `"vegan"`.
+
     let labels: [String]?
     let additives: [String]
     let quantity: String?
     let servingSize: String?
     let servingQuantity: Double?
-    /// The same figures scaled to one serving, computed server-side from the
-    /// serving quantity. Absent when the pack doesn't state one.
+
     let nutritionPerServing: Nutrition?
-    /// `["sugar": "high", ...]` — the source's own traffic light where it
-    /// publishes one, the FSA thresholds where it doesn't.
+
     let nutrientLevels: [String: String]?
     let nutriscoreScore: Int?
     let ecoscoreGrade: String?
     let novaGroup: Int?
     let nutriscoreGrade: String?
-    /// Tri-state: `nil` is "source doesn't know", never "no".
+
     let isVegan: Bool?
     let isVegetarian: Bool?
     let isPalmOilFree: Bool?
@@ -116,8 +101,6 @@ struct Product: Codable, Hashable, Identifiable, Sendable {
         self.isVegan = isVegan; self.isVegetarian = isVegetarian; self.isPalmOilFree = isPalmOilFree
     }
 
-    // MARK: Derived
-
     var isCommunitySourced: Bool { source == "user_contributed" }
 
     var isBeverage: Bool {
@@ -143,8 +126,6 @@ struct Product: Codable, Hashable, Identifiable, Sendable {
 
     var calories: Int? { nutrition.energyKcal.map { Int($0.rounded()) } }
 
-    /// 0–100 estimate from Nutri-Score + NOVA. Always captioned as an
-    /// estimate in the UI; `nil` when neither input exists.
     var healthScore: Int? {
         guard let grade = effectiveNutriscoreGrade else { return nil }
         var score = 100
@@ -185,13 +166,10 @@ struct Product: Codable, Hashable, Identifiable, Sendable {
         }
     }
 
-    /// Lower-cased ingredient text, for the fallback checks that run only on
-    /// community products with no structured tags.
     var ingredientText: String {
         (ingredients ?? "").lowercased()
     }
 
-    /// Everything the source says is in it, traces included, as slugs.
     var declaredAllergens: [String] { (allergens ?? []) + (traces ?? []) }
 
     var shareSummary: String {
@@ -211,8 +189,6 @@ struct Product: Codable, Hashable, Identifiable, Sendable {
 
 enum Tone { case good, fair, poor }
 
-/// Open Food Facts also ships "unknown" and "not-applicable" in this field,
-/// and the column is wide enough to store them. Only a–e is printable.
 enum Nutriscore {
     static let letters = ["a", "b", "c", "d", "e"]
 
@@ -222,7 +198,6 @@ enum Nutriscore {
         return g
     }
 
-    /// Standard Nutri-Score calculation based on Santé Publique France / EU Nutri-Score specifications.
     static func calculate(nutrition: Nutrition, isBeverage: Bool = false) -> (score: Int, grade: String)? {
         guard let energyKcal = nutrition.energyKcal,
               let sugar = nutrition.sugar,
@@ -394,7 +369,7 @@ struct Nutrition: Codable, Hashable, Sendable {
     var transFat: Double?
     var fiber: Double?
     var sugar: Double?
-    /// Grams per 100g, as Open Food Facts stores it.
+
     var sodium: Double?
     var cholesterol: Double?
     var potassium: Double?
@@ -405,8 +380,6 @@ struct Nutrition: Codable, Hashable, Sendable {
 
     init() {}
 
-    /// Tolerant decoding: OFF occasionally ships numbers as strings, and
-    /// community-contributed products ship `{}`. Neither should fail a scan.
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         func num(_ key: CodingKeys) -> Double? {
@@ -425,7 +398,6 @@ struct Nutrition: Codable, Hashable, Sendable {
             .allSatisfy { $0 == nil }
     }
 
-    /// Rows for the printed-label card, in conventional label order.
     var labelRows: [(name: String, value: String)] {
         var rows: [(String, String)] = []
         func g(_ name: String, _ v: Double?) { if let v { rows.append((name, "\(v.compact) g")) } }
@@ -446,8 +418,6 @@ struct Nutrition: Codable, Hashable, Sendable {
     }
 }
 
-/// Human class for an E-number, by its hundred-block — the standard
-/// Codex/EU numbering scheme, not a risk claim.
 enum Additive {
     static func kind(of code: String) -> String {
         let digits = code.drop(while: { !$0.isNumber }).prefix(while: \.isNumber)

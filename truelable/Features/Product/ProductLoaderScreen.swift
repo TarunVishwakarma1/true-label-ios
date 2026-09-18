@@ -1,13 +1,3 @@
-//
-//  ProductLoaderScreen.swift
-//  truelable
-//
-//  The single entry point for "show me barcode X" — from the scanner,
-//  manual entry, history, alternatives. Renders a skeleton at once, then the
-//  product / not-found / error state. Given an `initial` snapshot (history)
-//  it shows that instantly and refreshes quietly behind it.
-//
-
 import SwiftUI
 import SwiftData
 
@@ -15,11 +5,7 @@ struct ProductLoaderScreen: View {
     let barcode: String
     var initial: Product? = nil
     var inSheet: Bool = false
-    /// True only from an actual scan or manual barcode entry — the two
-    /// places the user genuinely looked something up. Every other entry
-    /// point (history, recents, trending, search, an alternative) is just
-    /// viewing, and defaults to false so it can never plant a new history
-    /// row or bump an existing one's position just by being opened.
+
     var addsHistory: Bool = false
 
     @Environment(\.modelContext) private var context
@@ -58,10 +44,7 @@ struct ProductLoaderScreen: View {
             let product = try await API.product(barcode: barcode)
             withAnimation(.tl(0.4)) { state = .loaded(product) }
             ScanRecord.record(product, in: context, bump: addsHistory, createIfMissing: addsHistory)
-            // Same gate as history: only a real scan or a typed barcode puts
-            // anything in the Dynamic Island. Opening a product from search
-            // or an alternative is browsing, and browsing shouldn't follow
-            // you onto the lock screen.
+
             if addsHistory { ScanActivity.show(product) }
         } catch APIError.notFound {
             if initial == nil { withAnimation(.tl(0.4)) { state = .notFound } }
@@ -106,7 +89,7 @@ struct ProductSkeleton: View {
             VStack(spacing: 16) {
                 HStack(alignment: .top, spacing: 16) {
                     RoundedRectangle(cornerRadius: TL.R.lg, style: .continuous)
-                        .fill(Color.white.opacity(0.08))
+                        .fill(TL.track)
                         .frame(width: 104, height: 104)
                     VStack(alignment: .leading, spacing: 8) {
                         Skeleton(lines: 2, height: 18)
@@ -116,11 +99,8 @@ struct ProductSkeleton: View {
                 }
                 .padding(.vertical, 8)
 
-                // Shaped like the verdict card it stands in for: a ring
-                // beside two lines, so the wait reads as this page arriving
-                // rather than as some other screen.
                 HStack(spacing: 20) {
-                    Circle().fill(Color.white.opacity(0.08)).frame(width: 88, height: 88)
+                    Circle().fill(TL.track).frame(width: 88, height: 88)
                     Skeleton(lines: 2, height: 14)
                 }
                 .card(.hero)

@@ -1,12 +1,3 @@
-//
-//  RootView.swift
-//  truelable
-//
-//  Four places to be (Home, History, Verify, You) and one action — Scan —
-//  which lives in the tab bar's bottom accessory so it's one tap away from
-//  every screen, the way a quick-commerce cart button is.
-//
-
 import SwiftUI
 import SwiftData
 
@@ -36,8 +27,7 @@ struct RootView: View {
             }
         }
         .task {
-            // Adopt the saved profile only when this device has none of its
-            // own — a fresh install after a reinstall, not an overwrite.
+
             guard let profile = try? await API.profile(), !profile.dietaryPreferences.isEmpty,
                   DietaryPreference.decode(dietaryRaw).isEmpty else { return }
             dietaryRaw = DietaryPreference.encode(Set(profile.dietaryPreferences.compactMap(DietaryPreference.init(rawValue:))))
@@ -59,49 +49,65 @@ struct RootView: View {
             Tab("Verify", systemImage: "checkmark.seal.fill", value: AppRouter.Tab.verify) { VerifyView() }
             Tab("You", systemImage: "person.fill", value: AppRouter.Tab.you) { ProfileView() }
         }
+
+        .tint(TL.accent)
         .tabViewBottomAccessory {
             ScanAccessory()
         }
+        .sensoryFeedback(.selection, trigger: router.tab)
     }
 }
 
-/// v1's scan button, in the place v2 keeps scanning: the tab bar accessory.
-/// Glass capsule, a highlight travelling its border, and the symbol swapping
-/// between the two things it reads. The system draws the glass here, so this
-/// adds the highlight and the swap rather than a second glass layer.
 private struct ScanAccessory: View {
     @Environment(AppRouter.self) private var router
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @State private var showQR = true
+    @State private var nudge = 0
 
     var body: some View {
         Button {
             router.scannerPresented = true
         } label: {
-            HStack(spacing: 12) {
-                Image(systemName: showQR ? "qrcode" : "barcode")
-                    .contentTransition(.symbolEffect(.replace))
+            HStack(spacing: 10) {
+                Image(systemName: "barcode.viewfinder")
+                    .font(.system(size: 17, weight: .semibold))
+                    .symbolEffect(.bounce, options: .nonRepeating, value: nudge)
                 Text(placement == .inline ? "Scan" : "Scan a product")
+                    .font(.headline)
             }
-            .font(.headline)
-            .foregroundStyle(TL.fg)
-            .engraved()
+            .foregroundStyle(TL.ink)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .contentShape(Rectangle())
-            .overlay {
-                AnimatedGradientBorder(shape: Capsule(), isPaused: router.scannerPresented)
-            }
+            .background(TL.accent, in: Capsule())
+            .overlay { if !reduceMotion { Sheen().clipShape(Capsule()) } }
+            .contentShape(Capsule())
         }
         .buttonStyle(.pressable)
         .accessibilityLabel("Scan a product")
-        // Paused while the scanner covers the screen — the accessory is
-        // still mounted and still rendering behind it.
-        .task(id: router.scannerPresented) {
-            guard !router.scannerPresented else { return }
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1.2))
-                withAnimation { showQR.toggle() }
+        .sensoryFeedback(.impact(weight: .medium), trigger: router.scannerPresented)
+
+        .onChange(of: router.scannerPresented) { _, presented in
+            if !presented { nudge += 1 }
+        }
+    }
+}
+
+private struct Sheen: View {
+    @State private var travelled = false
+
+    var body: some View {
+        GeometryReader { geo in
+            LinearGradient(
+                colors: [.clear, TL.ink.opacity(0.13), .clear],
+                startPoint: .leading, endPoint: .trailing
+            )
+            .frame(width: geo.size.width * 0.4)
+            .offset(x: travelled ? geo.size.width * 1.2 : -geo.size.width * 0.5)
+        }
+        .allowsHitTesting(false)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.6).delay(1.4).repeatForever(autoreverses: false)) {
+                travelled = true
             }
         }
     }
@@ -111,5 +117,4 @@ private struct ScanAccessory: View {
     RootView()
         .environment(AppRouter())
         .modelContainer(for: ScanRecord.self, inMemory: true)
-        .preferredColorScheme(.dark)
 }

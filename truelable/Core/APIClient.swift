@@ -1,29 +1,3 @@
-//
-//  APIClient.swift
-//  truelable
-//
-//  Every backend call in one place, on one URLSession, with one error
-//  type. Mirrors backend/src/routes/v1 exactly:
-//    GET  /api/v1/products/search?barcode&country
-//    GET  /api/v1/products/query?q&country&limit
-//    GET  /api/v1/products/trending?country&limit
-//    GET  /api/v1/products/alternatives?barcode&country&sort_by&limit
-//    GET  /api/v1/products/needs-verification?country&limit
-//    POST /api/v1/products/verify             {barcode, country}
-//    POST /api/v1/auth/device                 issues this install's token
-//    GET  /api/v1/me/profile
-//    PUT  /api/v1/me/profile                  {country?, dietary_preferences?, display_name?}
-//    GET  /api/v1/me/stats
-//    GET  /api/v1/me/subscription
-//    POST /api/v1/me/subscription             activate
-//    DELETE /api/v1/me/subscription           cancel
-//    POST /api/v1/me/link                     {identity_token, display_name?}
-//    POST /api/v1/me/unlink
-//    DELETE /api/v1/me/account
-//    POST /api/v1/ocr/submit        {barcode, country, extracted_text, reviewed_ingredients,
-//                                    reviewed_allergens, product_name?, brand?, nutrition?}
-//
-
 import Foundation
 
 enum APIError: LocalizedError {
@@ -46,7 +20,6 @@ enum APIError: LocalizedError {
     }
 }
 
-/// Handed out once per install and kept in the Keychain from then on.
 struct DeviceRegistration: Decodable, Sendable {
     var deviceId: String
     var token: String
@@ -73,10 +46,7 @@ enum API {
         return e
     }()
 
-    /// Backend defaults to IN; match it when the device has no region.
     static var country: String { Locale.current.region?.identifier ?? "IN" }
-
-    // MARK: Endpoints
 
     static func product(barcode: String) async throws -> Product {
         let env: Envelope<Product> = try await get("api/v1/products/search", ["barcode": barcode, "country": country])
@@ -127,27 +97,18 @@ enum API {
         var nutrition: Nutrition?
     }
 
-    // MARK: Identity
-
-    /// The only unauthenticated write. Called once per install by
-    /// `DeviceAuth`; everything else sends the token it returns.
     static func registerDevice() async throws -> DeviceRegistration {
         let env: Envelope<DeviceRegistration> = try await send("api/v1/auth/device", method: "POST", authenticated: false)
         guard let registration = env.data else { throw APIError.invalid }
         return registration
     }
 
-    // MARK: Profile and subscription
-
-    /// Reading a profile creates it, so there is no registration step.
     static func profile() async throws -> Profile {
         let env: Envelope<Profile> = try await get("api/v1/me/profile", ["country": country])
         guard let p = env.data else { throw APIError.invalid }
         return p
     }
 
-    /// Every field is optional on the wire: absent means "leave it alone",
-    /// so preferences and the display name are edited independently.
     static func updateProfile(dietaryPreferences: [String]? = nil, displayName: String? = nil) async throws -> Profile {
         struct Body: Encodable {
             var country: String
@@ -210,10 +171,6 @@ enum API {
         let _: Reply = try await post("api/v1/ocr/submit", submission)
     }
 
-    // MARK: Crash reporting
-
-    /// Unauthenticated on the backend on purpose: a crash can happen before
-    /// this install has a token. See `CrashReporter`.
     struct CrashReportSubmission: Encodable {
         var platform = "ios"
         var title: String
@@ -230,8 +187,6 @@ enum API {
         struct Reply: Decodable {}
         let _: Envelope<Reply> = try await post("api/v1/crash-reports", submission)
     }
-
-    // MARK: Plumbing
 
     private struct Envelope<T: Decodable>: Decodable {
         var status: String
@@ -254,7 +209,6 @@ enum API {
         return try await run(request)
     }
 
-    /// A body-less POST or DELETE.
     private static func send<T: Decodable>(_ path: String, method: String, authenticated: Bool = true) async throws -> T {
         var request = URLRequest(url: APIEnvironment.baseURL.appending(path: path))
         request.httpMethod = method
@@ -284,8 +238,7 @@ enum API {
         do {
             (data, response) = try await session.data(for: request)
         } catch {
-            // Every transport failure (no network, timeout, DNS, TLS) reads
-            // the same to the person holding the phone.
+
             throw APIError.offline
         }
         guard let http = response as? HTTPURLResponse else { throw APIError.invalid }
@@ -293,8 +246,7 @@ enum API {
         case 200..<300:
             do { return try decoder.decode(T.self, from: data) } catch { throw APIError.invalid }
         case 401 where authenticated && retryingAfterReauth:
-            // The row behind our token is gone — the account was deleted, or
-            // the database was reset. Register again and try once.
+
             await DeviceAuth.shared.forget()
             return try await run(request, authenticated: true, retryingAfterReauth: false)
         case 401:
@@ -309,7 +261,6 @@ enum API {
     }
 }
 
-/// A product as it appears in any list — search, trending, alternatives.
 struct ProductCard: Decodable, Identifiable, Hashable, Sendable {
     var id: String { barcode }
     var barcode: String
@@ -327,8 +278,6 @@ struct ProductCard: Decodable, Identifiable, Hashable, Sendable {
     var imageURL: URL? { imageUrl.flatMap(URL.init(string:)) }
 }
 
-/// What this device has put into the catalogue. Contribution, never
-/// consumption — how much someone scans stays on their phone.
 struct ContributionStats: Decodable, Sendable {
     var confirmations: Int
     var contributions: Int
@@ -345,20 +294,16 @@ struct Profile: Decodable, Sendable {
 struct Identity: Decodable, Sendable {
     var signedIn: Bool
     var provider: String?
-    /// Apple sends this only on the first authorization, and the person can
-    /// hide it, so signed in without an email is normal.
+
     var email: String?
     var displayName: String?
 }
 
-/// `since` and `expiresAt` are on the wire too — decoded when something
-/// actually shows a renewal date, which nothing does while Plus is free.
 struct Subscription: Decodable, Sendable {
     var tier: String
     var active: Bool
     var source: String?
 
-    /// How the tier was granted. `"complimentary"` is the free period.
     var isComplimentary: Bool { source == "complimentary" }
 }
 

@@ -1,13 +1,3 @@
-//
-//  ScanScreen.swift
-//  truelable
-//
-//  Full-screen camera. A recognised barcode opens the product as a sheet
-//  over the (paused) camera — swipe it away and you're scanning again, no
-//  re-entry. Chrome is one static reticle and one moving line; nothing
-//  else animates, so the camera + Vision get the whole GPU budget.
-//
-
 import SwiftUI
 import AVFoundation
 import UIKit
@@ -16,8 +6,6 @@ import VisionKit
 struct ScanScreen: View {
     @Environment(\.dismiss) private var dismiss
 
-    /// One sheet, by value — two `.sheet` modifiers on a single view race
-    /// each other within a frame.
     private enum Presented: Identifiable {
         case product(String)
         case manualEntry
@@ -38,11 +26,9 @@ struct ScanScreen: View {
     @State private var lastSeen = Date.distantPast
     @State private var scanned = 0
     @State private var invalidCount = 0
-    /// The beat between recognising a code and handing over to the sheet.
-    /// Without it the camera cuts to a product with no acknowledgement that
-    /// anything was read — the one moment on this screen worth marking.
+
     @State private var locked = false
-    /// nil until the camera permission question is settled.
+
     @State private var authorized: Bool?
 
     private var usable: Bool { authorized == true && DataScannerViewController.isSupported }
@@ -70,7 +56,6 @@ struct ScanScreen: View {
             default: authorized = false
             }
         }
-        .preferredColorScheme(.dark)
         .sheet(item: $presented, onDismiss: { lastSeen = .now }) { item in
             switch item {
             case .product(let barcode):
@@ -81,7 +66,7 @@ struct ScanScreen: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(TL.bg)
-                .presentationCornerRadius(TL.R.xl)
+                .presentationCornerRadius(TL.R.sheet)
             case .manualEntry:
                 ManualEntrySheet()
             }
@@ -90,8 +75,6 @@ struct ScanScreen: View {
         .sensoryFeedback(.warning, trigger: invalidCount)
         .onDisappear { Torch.set(false) }
     }
-
-    // MARK: Chrome
 
     private var chrome: some View {
         ZStack {
@@ -155,15 +138,11 @@ struct ScanScreen: View {
                 .font(.caption.weight(.semibold))
                 .tracking(1)
                 .textCase(.uppercase)
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(TL.fg)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .glassEffect(.regular, in: .capsule)
-                // The frame below is a pure visual guide with nothing for
-                // VoiceOver to add — this text already says everything a
-                // non-visual user needs, and a barcode-scanning camera has
-                // no accessible fallback here besides "Type the barcode"
-                // in the bottom bar, which is its own real control already.
+                .plate(TL.surface, lifted: true)
+
                 .accessibilityLabel(
                     cameraActive
                         ? "Point your camera at a barcode to scan, or use Type the barcode below"
@@ -178,9 +157,7 @@ struct ScanScreen: View {
                             style: StrokeStyle(lineWidth: locked ? 4 : 3, lineCap: .round))
                     .shadow(color: TL.accent.opacity(locked ? 0.9 : (cameraActive ? 0.5 : 0)),
                             radius: locked ? 20 : 12)
-                // The sweep stops the instant there's something to report —
-                // a line still hunting under a captured code reads as the
-                // scanner not having noticed.
+
                 if cameraActive && !locked {
                     ScanLine()
                 }
@@ -202,10 +179,10 @@ struct ScanScreen: View {
             } label: {
                 Label("Type the barcode", systemImage: "keyboard")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(TL.fg)
                     .padding(.horizontal, 18)
                     .padding(.vertical, 12)
-                    .glassEffect(.regular.interactive(), in: .capsule)
+                    .plate(TL.surface, lifted: true)
             }
             .buttonStyle(.pressable)
         }
@@ -237,7 +214,7 @@ struct ScanScreen: View {
             .foregroundStyle(tint)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .glassEffect(.regular, in: .capsule)
+            .plate(TL.surface, lifted: true)
             .padding(.horizontal, 24)
     }
 
@@ -273,11 +250,9 @@ struct ScanScreen: View {
         }
         .engraved()
         .padding(22)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: TL.R.xl, style: .continuous))
+        .plate(TL.surface, lifted: true)
         .padding(.horizontal, 28)
     }
-
-    // MARK: Handling
 
     private func handle(_ result: ScanResult) {
         guard cameraActive, !locked else { return }
@@ -285,8 +260,7 @@ struct ScanScreen: View {
         case .qr(let value):
             qr = value
         case .barcode(let code):
-            // The same code lingering in view right after its sheet was
-            // dismissed shouldn't reopen it.
+
             if code == lastCode, Date.now.timeIntervalSince(lastSeen) < 3 { return }
             lastCode = code
             lastSeen = .now
@@ -303,8 +277,7 @@ struct ScanScreen: View {
             let normalized = BarcodeChecksum.normalized(code)
             withAnimation(.tlSnap) { locked = true }
             Task {
-                // Long enough to register as confirmation, short enough that
-                // nobody waiting on a result would call it a delay.
+
                 try? await Task.sleep(for: .milliseconds(220))
                 presented = .product(normalized)
                 locked = false
@@ -337,7 +310,7 @@ private struct ReticleCorners: Shape {
     func path(in rect: CGRect) -> Path {
         var p = Path()
         let c: CGFloat = 26, r: CGFloat = 22
-        // Rounded corner brackets.
+
         p.move(to: CGPoint(x: rect.minX, y: rect.minY + c))
         p.addArc(tangent1End: CGPoint(x: rect.minX, y: rect.minY), tangent2End: CGPoint(x: rect.minX + c, y: rect.minY), radius: r)
         p.addLine(to: CGPoint(x: rect.minX + c, y: rect.minY))
@@ -357,8 +330,6 @@ private struct ReticleCorners: Shape {
     }
 }
 
-/// Number pad entry with live check-digit validation; a valid code pushes
-/// straight into the loader inside this sheet's own stack.
 struct ManualEntrySheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var code = ""
@@ -380,11 +351,6 @@ struct ManualEntrySheet: View {
                         .foregroundStyle(TL.fg2)
                 }
 
-                // Nested enclosure: an outer tray holding an inner plate,
-                // with the inner radius stepped down by the tray's own
-                // padding so the two curves stay concentric. A field sitting
-                // flat on the background is the thing that reads as a form;
-                // this reads as an instrument.
                 TextField("8901234567890", text: $code)
                     .keyboardType(.numberPad)
                     .font(.system(.title2, design: .monospaced).weight(.semibold))
@@ -393,7 +359,7 @@ struct ManualEntrySheet: View {
                     .padding(.horizontal, 16)
                     .frame(height: 60)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: TL.R.md, style: .continuous))
+                    .plate(TL.elevated)
                     .overlay {
                         RoundedRectangle(cornerRadius: TL.R.md, style: .continuous)
                             .strokeBorder(valid ? TL.accent : TL.line, lineWidth: valid ? 1.5 : 1)
@@ -407,11 +373,7 @@ struct ManualEntrySheet: View {
                                     .strokeBorder(TL.line)
                             }
                     }
-                    // Without this, VoiceOver reads the placeholder digits
-                    // themselves as the field's name — a real number read
-                    // out is a strange way to hear "this is the barcode
-                    // field." The digit count already updates live below,
-                    // so the hint doesn't need to repeat it.
+
                     .accessibilityLabel("Barcode")
                     .accessibilityHint("8, 12, or 13 digits")
                     .onChange(of: code) { _, new in
@@ -454,11 +416,10 @@ struct ManualEntrySheet: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationBackground(TL.bg)
-        .presentationCornerRadius(32)
+        .presentationCornerRadius(TL.R.sheet)
     }
 }
 
 #Preview {
     ScanScreen()
-        .preferredColorScheme(.dark)
 }

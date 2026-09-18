@@ -1,12 +1,3 @@
-//
-//  PlusView.swift
-//  truelable
-//
-//  The upgrade screen, on StoreKit's own subscription UI so pricing,
-//  trials, restore and family sharing behave exactly as the App Store
-//  expects. Marketing content above is ours.
-//
-
 import SwiftUI
 import StoreKit
 
@@ -33,13 +24,10 @@ struct PlusView: View {
             }
         }
         .presentationBackground(TL.bg)
-        .presentationCornerRadius(32)
+        .presentationCornerRadius(TL.R.sheet)
         .sensoryFeedback(.success, trigger: plus.isActive)
     }
 
-    /// Nothing is for sale yet, so the paywall is a switch. Same marketing,
-    /// no price, no obligation — and the copy says why rather than showing a
-    /// fake price.
     private var giveaway: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -136,7 +124,7 @@ struct PlusView: View {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 64))
                 .foregroundStyle(TL.plusGradient)
-                // The one moment in the app that has earned a flourish.
+
                 .symbolEffect(.bounce, options: .nonRepeating, value: plus.isActive)
                 .appear(0)
             Text("You're on Plus")
@@ -163,7 +151,6 @@ struct PlusView: View {
     }
 }
 
-/// Opens the system subscription management sheet.
 struct ManageSubscriptionButton: View {
     @State private var showing = false
     var body: some View {
@@ -173,7 +160,6 @@ struct ManageSubscriptionButton: View {
     }
 }
 
-/// Inline upsell used on Home and Profile.
 struct PlusBanner: View {
     var compact: Bool = false
     @State private var showing = false
@@ -210,7 +196,6 @@ struct PlusBanner: View {
     }
 }
 
-/// A row that says "this needs Plus" and opens the store.
 struct PlusGate: View {
     var text: String
     @State private var showing = false

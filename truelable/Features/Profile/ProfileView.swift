@@ -1,11 +1,3 @@
-//
-//  ProfileView.swift
-//  truelable
-//
-//  No account, so "You" is your preferences and your activity — all of it
-//  real and all of it on this phone.
-//
-
 import SwiftUI
 import SwiftData
 import Charts
@@ -27,11 +19,9 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                GlassEffectContainer(spacing: 24) {
+                Group {
                     VStack(spacing: 24) {
-                        // Above the fold gets the staged entrance; below it,
-                        // settling on scroll takes over. Doing both to the
-                        // same card just fights itself.
+
                         AccountCard().appear(0)
                         impact.appear(1)
                         if records.isEmpty {
@@ -68,8 +58,6 @@ struct ProfileView: View {
         }
     }
 
-    // MARK: Trends
-
     private var windowDays: [(date: Date, count: Int)] {
         let cal = Calendar.current
         let today = cal.startOfDay(for: .now)
@@ -102,7 +90,7 @@ struct ProfileView: View {
             }
             Chart(windowDays, id: \.date) { day in
                 BarMark(x: .value("Day", day.date, unit: .day), y: .value("Products", day.count))
-                    .foregroundStyle(day.count > 0 ? TL.accent : Color.white.opacity(0.1))
+                    .foregroundStyle(day.count > 0 ? TL.accent : TL.track)
                     .cornerRadius(3)
             }
             .chartXAxis {
@@ -196,9 +184,6 @@ struct ProfileView: View {
         }
     }
 
-    /// With no history there is no distribution and no trend, which used to
-    /// leave a gap between "your part in it" and the Plus card. Say what
-    /// would be here instead of showing nothing.
     private var scanPrompt: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Your trends")
@@ -212,8 +197,6 @@ struct ProfileView: View {
         .card()
     }
 
-    // MARK: What you scan
-
     private var graded: [(letter: String, count: Int)] {
         Nutriscore.letters.map { letter in
             (letter, records.filter { $0.nutriscoreGrade == letter }.count)
@@ -222,17 +205,12 @@ struct ProfileView: View {
 
     private var gradedTotal: Int { graded.reduce(0) { $0 + $1.count } }
 
-    /// The shape of what someone actually buys, which is more use than an
-    /// average, and needs nothing from the server.
     @ViewBuilder
     private var whatYouScan: some View {
         if gradedTotal > 0 {
             VStack(alignment: .leading, spacing: 14) {
                 SectionHeader(title: "What you scan", detail: "\(gradedTotal) graded")
 
-                // Proportional, so the bar is the distribution rather than a
-                // row of equal blocks. layoutPriority orders who gets space,
-                // it does not divide it.
                 GeometryReader { geo in
                     HStack(spacing: 0) {
                         ForEach(graded, id: \.letter) { entry in
@@ -353,5 +331,4 @@ struct ProfileView: View {
     ProfileView()
         .environment(AppRouter())
         .modelContainer(for: ScanRecord.self, inMemory: true)
-        .preferredColorScheme(.dark)
 }

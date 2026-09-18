@@ -1,21 +1,10 @@
-//
-//  LabelOCR.swift
-//  truelable
-//
-//  Turns captured takes (front / ingredients / nutrition) into a draft the
-//  user reviews. Mirrors the backend's parse of the ingredient side
-//  (services/ocr_service.rs); the server re-parses the raw text itself.
-//
-
 import Foundation
 
 enum LabelOCR {
     struct Draft: Equatable {
         var name: String
         var brand: String
-        /// Largest text on the front of the pack, biggest first — the brand
-        /// mark is usually stylised or in another script, so the user picks
-        /// rather than the parser guessing.
+
         var nameCandidates: [String]
         var ingredients: String
         var allergens: [String]
@@ -37,8 +26,6 @@ enum LabelOCR {
         )
     }
 
-    /// Distinct front-of-pack lines by height, skipping numbers, weights
-    /// and marketing fluff too long to be a name.
     static func frontCandidates(_ take: TextTake?) -> [String] {
         guard let take else { return [] }
         var out: [String] = []
@@ -55,8 +42,6 @@ enum LabelOCR {
     private static func isWeight(_ s: String) -> Bool {
         (try? /^\d+(?:[.,]\d+)?\s*(?:g|kg|ml|l|gm|gms)$/.ignoresCase().wholeMatch(in: s)) != nil
     }
-
-    // MARK: Heuristics (mirror the backend)
 
     private static let boundaries = [
         "contains", "may contain", "allergen", "manufactured", "distributed by",

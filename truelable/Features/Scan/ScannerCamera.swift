@@ -1,13 +1,3 @@
-//
-//  ScannerCamera.swift
-//  truelable
-//
-//  VisionKit's DataScannerViewController, with the SwiftUI chrome hosted
-//  *inside* the scanner's own view hierarchy. The scanner has its own
-//  gesture recognizers (tap-to-focus, item selection) that can beat a
-//  SwiftUI sibling for touches; a UIKit child view added last always wins.
-//
-
 import SwiftUI
 import AVFoundation
 import Vision
@@ -19,9 +9,7 @@ enum ScanResult: Equatable {
 }
 
 struct ScannerCamera<Overlay: View>: UIViewControllerRepresentable {
-    /// Mounted means scanning. The screen unmounts this view entirely while
-    /// anything renders over it, so the capture session and Vision stop
-    /// costing anything until they're needed again.
+
     var torch: Bool
     var onScan: (ScanResult) -> Void
     @ViewBuilder var overlay: () -> Overlay
@@ -57,7 +45,7 @@ struct ScannerCamera<Overlay: View>: UIViewControllerRepresentable {
         try? controller.startScanning()
         context.coordinator.torch = torch
         if torch {
-            // The torch only takes once the session is running.
+
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(450))
                 Torch.set(true)
@@ -85,9 +73,6 @@ struct ScannerCamera<Overlay: View>: UIViewControllerRepresentable {
         var hosting: UIHostingController<Overlay>?
         var torch = false
 
-        // A checksum alone lets ~1 in 10 misreads through. Requiring the same
-        // payload on two consecutive frames filters out the rest — a real
-        // barcode decodes identically frame after frame, a misread doesn't.
         private var pending: String?
         private var pendingCount = 0
 
@@ -111,7 +96,6 @@ struct ScannerCamera<Overlay: View>: UIViewControllerRepresentable {
     }
 }
 
-/// Device-level torch — independent of who owns the capture session.
 enum Torch {
     static var isAvailable: Bool { AVCaptureDevice.default(for: .video)?.hasTorch ?? false }
 

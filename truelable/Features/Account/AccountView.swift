@@ -1,12 +1,3 @@
-//
-//  AccountView.swift
-//  truelable
-//
-//  The one page about who you are. Signed out it explains what signing in
-//  buys and offers the only provider; signed in it shows what we hold, and
-//  lets you leave — sign out keeps everything, delete removes it.
-//
-
 import AuthenticationServices
 import SwiftUI
 
@@ -34,9 +25,7 @@ struct AccountView: View {
                         }
                     }
                     .appear(0)
-                    // Signing in or out swaps the whole panel, so the swap
-                    // is worth animating — it is the only thing that
-                    // confirms the tap did anything.
+
                     .animation(.tlSettle, value: account.signedIn)
                     whatWeStore.appear(1)
                 }
@@ -55,7 +44,7 @@ struct AccountView: View {
             }
         }
         .presentationBackground(TL.bg)
-        .presentationCornerRadius(32)
+        .presentationCornerRadius(TL.R.sheet)
         .task { await account.refresh() }
         .confirmationDialog("Delete your account?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete account", role: .destructive) {
@@ -66,8 +55,6 @@ struct AccountView: View {
         }
         .sensoryFeedback(.success, trigger: account.signedIn)
     }
-
-    // MARK: Signed out
 
     private var signedOut: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -112,11 +99,6 @@ struct AccountView: View {
         .card()
     }
 
-    // MARK: Name only
-
-    /// Sign in with Apple needs a paid developer team, so on a personal team
-    /// the honest version of "who are you" is a name you choose. No account,
-    /// nothing to verify, and the same row behind it.
     private var nameOnly: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
@@ -136,7 +118,7 @@ struct AccountView: View {
                 .submitLabel(.done)
                 .font(.body.weight(.medium))
                 .padding(16)
-                .glassEffect(.regular, in: .capsule)
+                .plate(TL.surface, lifted: true)
                 .onSubmit { save() }
 
             Button {
@@ -165,8 +147,6 @@ struct AccountView: View {
     private func save() {
         Task { await account.setName(nameDraft) }
     }
-
-    // MARK: Signed in
 
     private var signedIn: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -223,9 +203,6 @@ struct AccountView: View {
         }
     }
 
-    // MARK: Disclosure
-
-    /// Plain language, in the app, rather than only a policy URL nobody opens.
     private var whatWeStore: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "What we store")
@@ -250,7 +227,6 @@ struct AccountView: View {
     }
 }
 
-/// The row that opens the page, used at the top of You.
 struct AccountCard: View {
     @State private var showing = false
     private let account = Account.shared

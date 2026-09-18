@@ -4,25 +4,9 @@
 <dict>
 	<key>NSAppTransportSecurity</key>
 	<dict>
-		<!-- No exemptions. App Transport Security's defaults are the policy:
-		     TLS 1.2 or better, forward secrecy, and a SHA-256 certificate.
-
-		     This previously carried NSAllowsLocalNetworking for talking to a
-		     backend on the LAN over plain HTTP. The app only ever connects to
-		     APIEnvironment.baseURL, which is HTTPS, so the exemption
-		     permitted nothing it actually does — and an exemption ships in
-		     the binary whether or not a debug build uses it.
-
-		     To point a debug build at a local server, give that server a
-		     certificate (mkcert) rather than reopening cleartext here. -->
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 	</dict>
-	<!-- The one consumer today is QuickScanWidgetExtension's widgetURL —
-	     tapping the Home Screen widget opens truelabel://scan, which
-	     TrueLabelApp's onOpenURL turns into the same
-	     router.scannerPresented = true the empty History state already
-	     uses. Not a general-purpose deep-link scheme yet, just this. -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -36,10 +20,6 @@
 			</array>
 		</dict>
 	</array>
-	<!-- Live Activities. This is an Info.plist key, not an entitlement, so
-	     unlike Sign in with Apple it needs no paid Developer Program team.
-	     The activity this app starts is updated locally by the app itself;
-	     only push-updated activities need an APNs key, and none of these do. -->
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 </dict>

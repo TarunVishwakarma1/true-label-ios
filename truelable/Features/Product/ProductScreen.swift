@@ -1,13 +1,3 @@
-//
-//  ProductScreen.swift
-//  truelable
-//
-//  The result. Ordered the way a shopper actually decides: verdict → what
-//  it means for *you* → the numbers → the fine print → what else is on the
-//  shelf → help keep it honest. Every section hides itself when the data
-//  behind it doesn't exist.
-//
-
 import SwiftUI
 import SwiftData
 
@@ -31,7 +21,7 @@ struct ProductScreen: View {
 
     var body: some View {
         ScrollView {
-            GlassEffectContainer(spacing: 16) {
+            Group {
                 VStack(spacing: 16) {
                     hero.appear(0)
                     VerdictCard(product: product).appear(1)
@@ -63,7 +53,6 @@ struct ProductScreen: View {
             .padding(.top, 8)
             .padding(.bottom, 24)
         }
-        .background(alignment: .top) { imageBleed }
         .scrollIndicators(.hidden)
         .scrollBounceBehavior(.basedOnSize)
         .screenBackground()
@@ -87,35 +76,14 @@ struct ProductScreen: View {
         }
     }
 
-    /// The product's own photo, blown up and blurred, bleeding from the
-    /// top — masked to nothing before the first card. Static, one image.
-    @ViewBuilder
-    private var imageBleed: some View {
-        if let url = product.imageURL {
-            CachedAsyncImage(url: url) { image in
-                image?.resizable().scaledToFill()
-            }
-            .frame(height: 280)
-            .frame(maxWidth: .infinity)
-            .clipped()
-            .blur(radius: 40)
-            .opacity(0.45)
-            .saturation(1.3)
-            .drawingGroup()
-            .mask(LinearGradient(colors: [.black, .black, .clear], startPoint: .top, endPoint: .bottom))
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
-        }
-    }
-
     private var hero: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 16) {
                 Button {
                     if product.imageURL != nil { lightboxShown = true }
                 } label: {
-                    ProductThumb(url: product.imageURL, size: 104, radius: 26)
-                        .shadow(color: .black.opacity(0.4), radius: 18, y: 10)
+                    ProductThumb(url: product.imageURL, size: 104)
+                        .blockShadow()
                 }
                 .buttonStyle(.plain)
                 .disabled(product.imageURL == nil)
@@ -187,8 +155,6 @@ struct ProductScreen: View {
     }
 }
 
-/// Pick what to line this product up against, from history. Free: one
-/// other product. Plus: up to three.
 struct ComparePickerSheet: View {
     let current: Product
     @Query(sort: \ScanRecord.scannedAt, order: .reverse) private var records: [ScanRecord]
@@ -217,7 +183,7 @@ struct ComparePickerSheet: View {
                                         Image(systemName: selected.contains(r.barcode) ? "checkmark.circle.fill" : "circle")
                                             .font(.title3)
                                             .foregroundStyle(selected.contains(r.barcode) ? TL.accent : TL.fg3)
-                                        ProductThumb(url: r.imageURL, size: 48, radius: 14)
+                                        ProductThumb(url: r.imageURL, size: 48)
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(r.name).font(.subheadline.weight(.semibold)).lineLimit(1)
                                             Text(r.brand.isEmpty ? r.scannedAt.formatted(.relative(presentation: .named)) : r.brand)
@@ -267,7 +233,7 @@ struct ComparePickerSheet: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationBackground(TL.bg)
-        .presentationCornerRadius(32)
+        .presentationCornerRadius(TL.R.sheet)
     }
 
     private func toggle(_ barcode: String) {
@@ -302,5 +268,4 @@ struct ComparePickerSheet: View {
         ))
     }
     .modelContainer(for: ScanRecord.self, inMemory: true)
-    .preferredColorScheme(.dark)
 }

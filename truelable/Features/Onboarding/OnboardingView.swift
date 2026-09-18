@@ -1,15 +1,3 @@
-//
-//  OnboardingView.swift
-//  truelable
-//
-//  Three swipes: what it is, why to trust it, what to watch for. The
-//  preferences page writes straight to the same @AppStorage the rest of
-//  the app reads — no separate save step.
-//
-//  This is the first thing anyone sees, so it is the one screen where the
-//  entrance is the point: the mark reads itself, then the words arrive.
-//
-
 import SwiftUI
 
 struct OnboardingView: View {
@@ -35,9 +23,6 @@ struct OnboardingView: View {
                 .buttonStyle(.primary)
                 .contentTransition(.opacity)
 
-                // A third page of preferences is worth skipping for someone
-                // reinstalling, and burying the exit is the kind of thing
-                // that reads as an app that doesn't trust its own value.
                 Group {
                     if page == 2 {
                         Text("Stays on your phone. No account, nothing sold about you.")
@@ -64,7 +49,7 @@ struct OnboardingView: View {
         HStack(spacing: 8) {
             ForEach(0..<3, id: \.self) { i in
                 Capsule()
-                    .fill(i == page ? TL.accent : Color.white.opacity(0.18))
+                    .fill(i == page ? TL.accent : TL.track)
                     .frame(width: i == page ? 22 : 8, height: 4)
                     .animation(.tlSnap, value: page)
             }
@@ -161,9 +146,6 @@ struct OnboardingView: View {
     }
 }
 
-/// The brand mark, reading itself. A barcode's whole job is to be scanned,
-/// so the one animation on the opening screen is the scan — not a logo that
-/// slides in from somewhere for no reason.
 private struct ScanningGlyph: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var sweeping = false
@@ -195,7 +177,6 @@ private struct ScanningGlyph: View {
     }
 }
 
-/// Wrapping chips over the shared preference set. Used here and in Profile.
 struct DietaryChips: View {
     @Binding var raw: String
 
@@ -221,7 +202,7 @@ struct DietaryChips: View {
                     .engraved(0.6)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .glassEffect(on ? .regular.tint(TL.accent).interactive() : .regular.interactive(), in: .capsule)
+                    .plate(on ? TL.accent : TL.surface)
                 }
                 .buttonStyle(.pressable)
                 .accessibilityAddTraits(on ? .isSelected : [])
@@ -231,7 +212,6 @@ struct DietaryChips: View {
     }
 }
 
-/// Left-to-right wrapping layout for chips.
 struct FlowLayout: Layout {
     var spacing: CGFloat = 8
 
@@ -261,5 +241,4 @@ struct FlowLayout: Layout {
 
 #Preview {
     OnboardingView(onFinished: {})
-        .preferredColorScheme(.dark)
 }

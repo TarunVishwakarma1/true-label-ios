@@ -1,15 +1,3 @@
-//
-//  HistoryView.swift
-//  truelable
-//
-//  Everything this device has looked up, searchable, with a compare mode
-//  for 2–4 products. Rows open instantly from the stored snapshot.
-//
-//  The filter used to hide inside a toolbar menu, which meant the only
-//  indication the list was filtered was a slightly different icon. It is a
-//  chip rail now: the state of the list is visible from the list itself.
-//
-
 import SwiftUI
 import SwiftData
 
@@ -104,7 +92,6 @@ struct HistoryView: View {
         }
     }
 
-    /// "Today / Yesterday / This week / Earlier" buckets.
     private var grouped: [(title: String, records: [ScanRecord])] {
         let cal = Calendar.current
         let today = cal.startOfDay(for: .now)
@@ -135,13 +122,7 @@ struct HistoryView: View {
                         .foregroundStyle(on ? TL.ink : TL.fg2)
                         .padding(.horizontal, 12)
                         .frame(height: 34)
-                        .background {
-                            if on {
-                                Capsule().fill(TL.accentGradient)
-                            } else {
-                                Capsule().fill(TL.surface).overlay(Capsule().stroke(TL.line))
-                            }
-                        }
+                        .plate(on ? TL.accent : TL.elevated, radius: 99)
                     }
                     .buttonStyle(.pressable)
                 }
@@ -213,7 +194,7 @@ struct HistoryView: View {
                     .foregroundStyle(picked ? TL.accent : TL.fg3)
                     .contentTransition(.symbolEffect(.replace))
             }
-            ProductThumb(url: record.imageURL, size: 56, radius: 16)
+            ProductThumb(url: record.imageURL, size: 56)
             VStack(alignment: .leading, spacing: 4) {
                 Text(record.name)
                     .font(.subheadline.weight(.semibold))
@@ -242,7 +223,7 @@ struct HistoryView: View {
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())
-        // Picking for compare should feel like picking something up.
+
         .scaleEffect(compareMode && picked ? 0.985 : 1)
         .animation(.tlSnap, value: picked)
     }
@@ -265,12 +246,12 @@ struct HistoryView: View {
         .padding(.horizontal, TL.gutter)
         .padding(.top, 12)
         .padding(.bottom, 8)
-        .background(.regularMaterial)
+
+        .background(TL.surface)
+        .overlay(alignment: .top) { Hairline() }
         .animation(.tlSettle, value: selected.count)
     }
 
-    /// Filtered down to nothing is a different situation from having scanned
-    /// nothing, and it needs the filter back — not a shrug.
     private var noMatches: some View {
         VStack(spacing: 14) {
             Image(systemName: "line.3.horizontal.decrease.circle")
@@ -330,5 +311,4 @@ struct HistoryView: View {
     HistoryView()
         .environment(AppRouter())
         .modelContainer(for: ScanRecord.self, inMemory: true)
-        .preferredColorScheme(.dark)
 }

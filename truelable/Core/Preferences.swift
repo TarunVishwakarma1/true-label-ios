@@ -1,11 +1,3 @@
-//
-//  Preferences.swift
-//  truelable
-//
-//  Everything the user has told us about themselves lives on-device in
-//  UserDefaults, read reactively through @AppStorage. No accounts.
-//
-
 import Foundation
 import SwiftUI
 
@@ -16,8 +8,6 @@ enum Keys {
     static let verifiedBarcodes = "v2.verified.barcodes"
 }
 
-/// One list of things to watch for. Turning one on changes what the
-/// product screen flags first — nothing else.
 enum DietaryPreference: String, CaseIterable, Identifiable, Sendable {
     case vegetarian = "Vegetarian"
     case vegan = "Vegan"
@@ -47,8 +37,6 @@ enum DietaryPreference: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    // Stored as a comma-joined string so a plain @AppStorage<String> can
-    // hold it and every screen updates together.
     static func decode(_ raw: String) -> Set<DietaryPreference> {
         Set(raw.split(separator: ",").compactMap { DietaryPreference(rawValue: String($0)) })
     }
@@ -58,17 +46,12 @@ enum DietaryPreference: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
-/// UK FSA traffic-light thresholds per 100g — published references, not
-/// numbers invented here. Sodium derived from the salt threshold ÷ 2.5.
 enum Threshold {
-    static let sugarHigh = 22.5, sugarLow = 5.0        // g
-    static let sodiumHigh = 600.0, sodiumLow = 120.0   // mg
-    static let proteinHigh = 10.0                       // g — "high in protein" claim floor (≥20% energy ≈ 10g/100g rule of thumb)
+    static let sugarHigh = 22.5, sugarLow = 5.0
+    static let sodiumHigh = 600.0, sodiumLow = 120.0
+    static let proteinHigh = 10.0
 }
 
-/// What the product screen's "For you" card shows: one verdict per enabled
-/// preference, derived only from fields the product actually has. Missing
-/// data says "couldn't check" — never a silent pass.
 struct PersonalCheck: Identifiable, Hashable {
     enum Status { case good, caution, avoid, unknown }
     let preference: DietaryPreference
@@ -143,10 +126,6 @@ struct PersonalCheck: Identifiable, Hashable {
         }
     }
 
-    /// Structured tags first, because they are the source's own declaration.
-    /// The ingredient text is only a fallback for community products that
-    /// have no tags at all, and it distinguishes "contains" from "may
-    /// contain" — a trace is a different warning from an ingredient.
     private static func allergen(
         _ p: Product, _ text: String, slugs: [String], keywords: [String], name: String,
         present: Status = .avoid
@@ -166,18 +145,12 @@ struct PersonalCheck: Identifiable, Hashable {
             : (.good, "No \(name) listed")
     }
 
-    /// "Gluten free" contains "gluten". Matching the bare substring reported
-    /// every certified gluten-free product as containing gluten — a false
-    /// alarm on exactly the products someone avoiding it should be able to
-    /// buy. Same trap for "palm oil free" and "sugar free".
     private static func mentions(_ text: String, _ word: String) -> Bool {
         guard text.contains(word) else { return false }
         let negations = ["\(word) free", "\(word)-free", "no \(word)", "\(word)free"]
         return !negations.contains { text.contains($0) }
     }
 
-    /// Prefers the source's own traffic light, falling back to the FSA
-    /// thresholds the backend uses when it publishes none.
     private static func level(
         _ p: Product, _ key: String, _ value: Double?, _ high: Double, _ low: Double,
         _ name: String, _ unit: String
@@ -213,7 +186,7 @@ extension PersonalCheck.Status {
         case .unknown: "questionmark.circle"
         }
     }
-    /// Sort key: problems first.
+
     var rank: Int {
         switch self {
         case .avoid: 0

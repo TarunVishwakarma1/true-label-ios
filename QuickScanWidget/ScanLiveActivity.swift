@@ -1,13 +1,3 @@
-//
-//  ScanLiveActivity.swift
-//  QuickScanWidgetExtension
-//
-//  The last scan, parked in the Dynamic Island. Same reasoning as the
-//  widget next door: this target can't see the app's Design/Theme.swift, so
-//  the handful of colours it needs are restated here rather than dragging
-//  cross-target file membership in for a palette.
-//
-
 import ActivityKit
 import SwiftUI
 import WidgetKit
@@ -19,7 +9,6 @@ private enum ActivityTL {
     static let fg3 = Color(red: 0x8A / 255, green: 0x83 / 255, blue: 0x7A / 255)
     static let accent = Color(red: 0xEF / 255, green: 0xE6 / 255, blue: 0xD4 / 255)
 
-    // The published Nutri-Score ramp, same five steps as TL.grade.
     static let good = Color(red: 0x4F / 255, green: 0xBF / 255, blue: 0x73 / 255)
     static let fair = Color(red: 0xA3 / 255, green: 0xC6 / 255, blue: 0x3F / 255)
     static let warn = Color(red: 0xE9 / 255, green: 0xB2 / 255, blue: 0x3C / 255)
@@ -38,9 +27,6 @@ private enum ActivityTL {
     }
 }
 
-/// The grade, as a letter in its own colour. Doubles as the compact and
-/// minimal island presentation, where it is often the only thing that fits —
-/// and it is also the one thing worth seeing at that size.
 private struct GradeMark: View {
     var grade: String?
     var size: CGFloat = 22
@@ -56,8 +42,6 @@ private struct GradeMark: View {
     }
 }
 
-/// Zero concerns is a real answer and gets a real mark, not an empty space —
-/// "nothing here trips your checks" is most of the value of having set them.
 private struct ConcernMark: View {
     var concerns: Int
     var compact = false
@@ -124,8 +108,7 @@ struct ScanLiveActivity: Widget {
             } minimal: {
                 GradeMark(grade: state.grade, size: 18)
             }
-            // The island's own hairline picks up the verdict, so the colour
-            // is readable even in the minimal presentation.
+
             .keylineTint(ActivityTL.grade(state.grade))
         }
     }

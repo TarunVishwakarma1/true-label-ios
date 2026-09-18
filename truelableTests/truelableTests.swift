@@ -1,22 +1,13 @@
-//
-//  truelableTests.swift
-//  truelableTests
-//
-//  One check per piece of logic that would break silently: check digits,
-//  API decoding (including the tolerant nutrition parse), the personal
-//  flag engine, and additive classes.
-//
-
 import Foundation
 import Testing
 @testable import truelable
 
 struct ChecksumTests {
     @Test func acceptsRealBarcodes() {
-        #expect(BarcodeChecksum.isValid("8901030895562"))   // EAN-13
-        #expect(BarcodeChecksum.isValid("036000291452"))    // UPC-A
-        #expect(BarcodeChecksum.isValid("0036000291452"))   // same, EAN-13 form
-        #expect(BarcodeChecksum.isValid("96385074"))        // EAN-8
+        #expect(BarcodeChecksum.isValid("8901030895562"))
+        #expect(BarcodeChecksum.isValid("036000291452"))
+        #expect(BarcodeChecksum.isValid("0036000291452"))
+        #expect(BarcodeChecksum.isValid("96385074"))
     }
 
     @Test func rejectsBadOnes() {
@@ -58,8 +49,8 @@ struct DecodingTests {
         #expect(p.name == "Aloo Bhujia")
         #expect(p.imageURL?.host() == "images.example")
         #expect(p.nutrition.energyKcal == 546)
-        #expect(p.nutrition.protein == 9.2)        // string number tolerated
-        #expect(p.nutrition.sugar == nil)          // null tolerated
+        #expect(p.nutrition.protein == 9.2)
+        #expect(p.nutrition.sugar == nil)
         #expect(p.nutrition.sodiumMg == 1180)
         #expect(p.additives == ["E330", "E500II"])
         #expect(p.allergens == ["peanuts", "milk"])
@@ -67,7 +58,7 @@ struct DecodingTests {
         #expect(p.servingQuantity == 30)
         #expect(p.nutritionPerServing?.energyKcal == 163.8)
         #expect(p.nutrientLevels?["sodium"] == "high")
-        #expect(p.healthScore == 45)               // d (-40) + nova 4 (-15)
+        #expect(p.healthScore == 45)
     }
 
     @Test func snapshotRoundTrips() throws {
@@ -146,9 +137,9 @@ struct NutritionParserTests {
         #expect(n.saturatedFat == 12.1)
         #expect(n.transFat == 0)
         #expect(n.carbs == 43.8)
-        #expect(n.sugar == 2.4)          // label and value on separate lines
+        #expect(n.sugar == 2.4)
         #expect(n.protein == 9.2)
-        #expect(n.sodium == 0.48)        // salt 1.2 g → sodium 0.48 g
+        #expect(n.sodium == 0.48)
     }
 
     @Test func convertsKJOnlyEnergyAndMgSodium() {
@@ -179,7 +170,7 @@ struct NutriscoreTests {
     @Test func onlyLettersSurvive() {
         #expect(Nutriscore.letter("D") == "d")
         #expect(Nutriscore.letter(" a ") == "a")
-        // The column is wide enough for these, and a badge can't print them.
+
         #expect(Nutriscore.letter("unknown") == nil)
         #expect(Nutriscore.letter("not-applicable") == nil)
         #expect(Nutriscore.letter("") == nil)
@@ -188,14 +179,11 @@ struct NutriscoreTests {
 }
 
 struct AllergenCheckTests {
-    /// The bug this guards: "gluten free" contains "gluten", so matching the
-    /// bare substring flagged exactly the products someone avoiding gluten
-    /// should be able to buy.
+
     @Test func certifiedGlutenFreeIsNotReportedAsContainingGluten() {
         let certified = Product(barcode: "1", name: "Oats", labels: ["en-gluten-free", "gluten-free"])
         #expect(PersonalCheck.run([.glutenFree], on: certified).first?.status == .good)
 
-        // Community products carry no tags, only the text a person typed.
         let statedInText = Product(barcode: "2", name: "Oats", ingredients: "Rolled oats, gluten free")
         #expect(PersonalCheck.run([.glutenFree], on: statedInText).first?.status == .good)
 
@@ -214,8 +202,6 @@ struct AllergenCheckTests {
         let declaresNone = Product(barcode: "1", name: "Water", allergens: [])
         #expect(PersonalCheck.run([.peanutAllergy], on: declaresNone).first?.status == .good)
 
-        // Nothing published and no ingredients: we do not know, and saying
-        // "no peanuts" would be a claim we cannot support.
         let silent = Product(barcode: "2", name: "Mystery")
         #expect(PersonalCheck.run([.peanutAllergy], on: silent).first?.status == .unknown)
     }
@@ -225,8 +211,7 @@ struct AllergenCheckTests {
         nutrition.sugar = 1.0
         let product = Product(barcode: "1", name: "Drink", nutrition: nutrition,
                               nutrientLevels: ["sugar": "high"])
-        // Our own thresholds would call 1 g low; the source says high for a
-        // drink, and the source wins.
+
         #expect(PersonalCheck.run([.lowSugar], on: product).first?.status == .avoid)
     }
 }
@@ -237,9 +222,7 @@ struct CrashReporterTests {
             exceptionType: 1, signal: 6, terminationReason: nil, stackTraceJSON: nil,
             appBuildVersion: "12", osVersion: "26.5", deviceType: "iPhone17,1", deviceId: nil
         )
-        // Exception type wins over signal when both are present — a
-        // signal accompanies most exception crashes too, and the
-        // exception type is the more specific fact.
+
         #expect(s.title == "Exception type 1")
     }
 

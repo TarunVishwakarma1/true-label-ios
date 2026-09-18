@@ -1,13 +1,4 @@
-//
-//  ProductSections.swift
-//  truelable
-//
-//  The cards that make up ProductScreen. Each owns exactly one idea.
-//
-
 import SwiftUI
-
-// MARK: - Verdict
 
 struct VerdictCard: View {
     let product: Product
@@ -60,8 +51,6 @@ struct VerdictCard: View {
     }
 }
 
-// MARK: - For you
-
 struct ForYouCard: View {
     let checks: [PersonalCheck]
 
@@ -99,8 +88,6 @@ struct ForYouCard: View {
         .card(fill: worst == .avoid ? Color(hex: 0x24151A) : TL.surface)
     }
 }
-
-// MARK: - Macros
 
 struct MacroCard: View {
     let product: Product
@@ -144,8 +131,6 @@ struct MacroCard: View {
     }
 }
 
-// MARK: - Sugar
-
 struct SugarCard: View {
     let sugarGrams: Double
 
@@ -183,8 +168,6 @@ struct SugarCard: View {
         .card()
     }
 }
-
-// MARK: - Nutrition label (paper)
 
 struct LabelCard: View {
     let product: Product
@@ -231,7 +214,7 @@ struct LabelCard: View {
         }
         .background(TL.paper)
         .clipShape(RoundedRectangle(cornerRadius: TL.R.sm, style: .continuous))
-        .shadow(color: .black.opacity(0.35), radius: 20, y: 10)
+        .blockShadow()
         .padding(.vertical, 6)
     }
 }
@@ -250,8 +233,6 @@ private struct TornEdge: Shape {
         return p
     }
 }
-
-// MARK: - Ingredients / additives / allergens
 
 struct IngredientsCard: View {
     let text: String
@@ -309,8 +290,6 @@ struct AllergensCard: View {
     var allergens: [String]
     var traces: [String]
 
-    /// Source slugs are `"tree-nuts"`, `"en"`-stripped upstream. This only
-    /// makes them readable.
     private func label(_ slug: String) -> String {
         slug.replacingOccurrences(of: "-", with: " ").capitalized
     }
@@ -335,8 +314,6 @@ struct AllergensCard: View {
                     }
                 }
 
-                // Separate on purpose: for an allergy this is often the line
-                // that decides it, and burying it with the ingredients hides it.
                 if !traces.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("MAY CONTAIN")
@@ -352,10 +329,6 @@ struct AllergensCard: View {
     }
 }
 
-// MARK: - Alternatives
-
-/// Same-shelf swaps. Free: the top three on the nutrient you watch. Plus:
-/// pick the nutrient and see the full ranked list.
 struct AlternativesCard: View {
     let product: Product
     let prefs: Set<DietaryPreference>
@@ -411,7 +384,7 @@ struct AlternativesCard: View {
             .card()
             .transition(.opacity.combined(with: .move(edge: .bottom)))
         }
-        // Rendered even when empty so the task still runs.
+
         Color.clear.frame(height: 0)
             .task(id: "\(product.barcode)|\(sortKey)|\(plus.isActive)") {
                 if !loaded {
@@ -427,8 +400,6 @@ struct AlternativesCard: View {
             }
     }
 }
-
-// MARK: - Community verification
 
 struct CommunityCard: View {
     @Binding var product: Product
@@ -463,7 +434,7 @@ struct CommunityCard: View {
             HStack(spacing: 4) {
                 ForEach(0..<3, id: \.self) { i in
                     Capsule()
-                        .fill(i < product.verificationCount ? TL.accent : Color.white.opacity(0.1))
+                        .fill(i < product.verificationCount ? TL.accent : TL.track)
                         .frame(height: 4)
                 }
             }

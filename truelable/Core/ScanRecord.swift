@@ -1,12 +1,3 @@
-//
-//  ScanRecord.swift
-//  truelable
-//
-//  One row per product this device has looked up. The full `Product` is
-//  snapshotted as JSON so history opens instantly and offline; a few fields
-//  are denormalised for sorting/searching/charts.
-//
-
 import Foundation
 import SwiftData
 
@@ -69,13 +60,6 @@ final class ScanRecord {
         }
     }
 
-    /// Insert-or-update by barcode. `bump` moves it to the top of history
-    /// (a real new look-up); `false` just refreshes the snapshot.
-    /// `createIfMissing` is the other half of that same distinction: merely
-    /// viewing a product (search, trending, an alternative) should never
-    /// plant a brand-new row — only an actual scan or manual barcode entry
-    /// should. A product already being tracked still gets its snapshot
-    /// quietly refreshed either way.
     @MainActor
     static func record(_ product: Product, in context: ModelContext, bump: Bool = true, createIfMissing: Bool = true) {
         let barcode = product.barcode
@@ -87,4 +71,3 @@ final class ScanRecord {
         }
     }
 }
-
